@@ -1,0 +1,45 @@
+--- a/drivers/clk/sunxi-ng/ccu-sun8i-v3s.c	2023-06-28 11:28:17.000000000 +0300
++++ b/drivers/clk/sunxi-ng/ccu-sun8i-v3s.c	2023-07-04 16:45:37.038409060 +0300
+@@ -25,6 +25,7 @@
+ 
+ #include "ccu-sun8i-v3s.h"
+ 
++#if 0
+ static SUNXI_CCU_NKMP_WITH_GATE_LOCK(pll_cpu_clk, "pll-cpu",
+ 				     "osc24M", 0x000,
+ 				     8, 5,	/* N */
+@@ -34,7 +35,25 @@
+ 				     BIT(31),	/* gate */
+ 				     BIT(28),	/* lock */
+ 				     0);
++#else
++static struct ccu_nkmp pll_cpu_clk = {
++        .enable         = BIT(31),
++        .lock           = BIT(28),
++        .n              = _SUNXI_CCU_MULT(8, 5),
++        .k              = _SUNXI_CCU_MULT(4, 2),
++        .m              = _SUNXI_CCU_DIV(0, 2),//freeze m < 2
++        .p              = _SUNXI_CCU_DIV(16, 2),//_SUNXI_CCU_DIV_MAX
++        .common         = {
++                .reg            = 0x000,
++                .hw.init        = CLK_HW_INIT("pll-cpu",
++                                              "osc24M",
++                                              &ccu_nkmp_ops,
++                                              0),
++        },
++};
+ 
++
++#endif
+ /*
+  * The Audio PLL is supposed to have 4 outputs: 3 fixed factors from
+  * the base (2x, 4x and 8x), and one variable divider (the one true
+@@ -127,7 +146,7 @@
+ static const char * const cpu_parents[] = { "osc32k", "osc24M",
+ 					     "pll-cpu", "pll-cpu" };
+ static SUNXI_CCU_MUX(cpu_clk, "cpu", cpu_parents,
+-		     0x050, 16, 2, CLK_IS_CRITICAL);
++		     0x050, 16, 2, CLK_IS_CRITICAL | CLK_SET_RATE_PARENT);
+ 
+ static SUNXI_CCU_M(axi_clk, "axi", "cpu", 0x050, 0, 2, 0);
+ 

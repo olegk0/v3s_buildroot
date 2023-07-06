@@ -1,0 +1,20 @@
+--- a/main.c	2023-05-06 23:11:40.374784076 +0300
++++ b/main.c	2023-05-06 23:32:45.168176970 +0300
+@@ -26,6 +26,7 @@
+ #include <SDL.h>
+ #include <SDL_ttf.h>
+ #include "common.h"
++#include <fcntl.h>
+ 
+ extern TTF_Font *font;
+ extern TTF_Font *font_small;
+@@ -219,7 +220,8 @@
+     // ChangeWorkingDirectory will null out the filename out of the path
+     ChangeWorkingDirectory(argv[0]);
+ 
+-    getcwd(main_path, 512);
++//    getcwd(main_path, 512);
++    sprintf(main_path,"/root/gpsp");
+ 
+ #ifdef PSP_BUILD
+     delay_us(2500000);

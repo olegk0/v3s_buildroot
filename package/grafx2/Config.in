@@ -1,0 +1,7 @@
+config BR2_PACKAGE_GRAFX2
+	bool "grafx2"
+	depends on BR2_PACKAGE_SDL
+	select BR2_PACKAGE_SDL_IMAGE
+	select BR2_PACKAGE_SDL_TTF
+	help
+	  GrafX2 - The Ultimate 256-color bitmap paint program

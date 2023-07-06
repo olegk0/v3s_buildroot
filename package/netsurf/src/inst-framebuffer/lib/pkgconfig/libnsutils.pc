@@ -1,0 +1,10 @@
+prefix=/home/iam/workspace/SDL/Browser/netsurf-all-3.10.orig/inst-framebuffer
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libnsutils
+Description: NetSurf utilities
+Version: 0.1.0
+Libs: -L${libdir} -lnsutils -lrt
+Cflags: -I${includedir}

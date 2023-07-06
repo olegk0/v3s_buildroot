@@ -1,0 +1,10 @@
+/mnt/data/HW/Allwiner/LicheePi-Zero_V3S/root/buildroot-2023.02/package/sdl/0001-use-correct-directfb-config.patch
+/mnt/data/HW/Allwiner/LicheePi-Zero_V3S/root/buildroot-2023.02/package/sdl/0002-remove-libudev-config.patch
+/mnt/data/HW/Allwiner/LicheePi-Zero_V3S/root/buildroot-2023.02/package/sdl/0005-SDL_kmsdrmevents.c.patch
+/mnt/data/HW/Allwiner/LicheePi-Zero_V3S/root/buildroot-2023.02/package/sdl/0006-SDL_kmsdrmevents_c.h.patch
+/mnt/data/HW/Allwiner/LicheePi-Zero_V3S/root/buildroot-2023.02/package/sdl/0007-SDL_fbelo.c.patch
+/mnt/data/HW/Allwiner/LicheePi-Zero_V3S/root/buildroot-2023.02/package/sdl/0008-SDL_fbelo.h.patch
+/mnt/data/HW/Allwiner/LicheePi-Zero_V3S/root/buildroot-2023.02/package/sdl/0009-SDL_kmsdrmmisc.c.patch
+/mnt/data/HW/Allwiner/LicheePi-Zero_V3S/root/buildroot-2023.02/package/sdl/0010-SDL_kmsdrmmisc_c.h.patch
+/mnt/data/HW/Allwiner/LicheePi-Zero_V3S/root/buildroot-2023.02/package/sdl/0011-SDL_kmsdrmvideo.c.patch
+/mnt/data/HW/Allwiner/LicheePi-Zero_V3S/root/buildroot-2023.02/package/sdl/0012-SDL_kmsdrmvideo.h.patch

@@ -1,0 +1,31 @@
+--- a/arch/arm/boot/dts/sun8i-v3s-licheepi-zero-dock.dts	2023-07-02 17:48:59.343570767 +0300
++++ b/arch/arm/boot/dts/sun8i-v3s-licheepi-zero-dock.dts	2023-07-02 17:49:02.867614136 +0300
+@@ -58,6 +58,20 @@
+ 		status = "disabled";
+ 	};
+ 	
++        reserved-memory {
++                #address-cells = <1>;
++                #size-cells = <1>;
++                ranges;
++
++                framebuffer: framebuffer {
++                        size = <0x400000>;
++                        //alignment = <0x10000>;
++                        compatible = "shared-dma-pool";
++                        reusable;
++			//no-map;
++                };
++        };
++
+         gpio-poweroff {
+                 compatible = "gpio-poweroff";
+                 pinctrl-0 = <&pmx_poweroff>;
+@@ -98,6 +112,7 @@
+ 
+ &de {
+         status = "okay";
++	memory-region = <&framebuffer>;
+ };
+ 
+ &tcon0 {

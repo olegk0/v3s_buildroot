@@ -1,0 +1,56 @@
+From 2e2ad705500f0f52769c14b6f9722def9057633c Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Wed, 25 Nov 2020 21:16:30 -0800
+Subject: [PATCH] CMake: Move BUILD_GL flags to FEATURE_DEFINES
+
+---
+ CMakeLists.txt | 15 +++------------
+ 1 file changed, 3 insertions(+), 12 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 16c44c14c..49ca879d1 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -457,17 +457,20 @@ if(NOT BUILD_GLES2)
+ endif()
+ if(BUILD_GL)
+ 	list(APPEND FEATURE_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/opengl/gl.c)
++	list(APPEND FEATURE_DEFINES BUILD_GL)
+ 	list(APPEND DEPENDENCY_LIB ${OPENGL_LIBRARY})
+ 	include_directories(${OPENGL_INCLUDE_DIR})
+ endif()
+ if(BUILD_GLES2)
+ 	list(APPEND FEATURE_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/opengl/gles2.c)
++	list(APPEND FEATURE_DEFINES BUILD_GLES2)
+ 	list(APPEND DEPENDENCY_LIB ${OPENGLES2_LIBRARY})
+ 	include_directories(${OPENGLES2_INCLUDE_DIR})
+ endif()
+ if(BUILD_GLES3)
+ 	find_path(OPENGLES3_INCLUDE_DIR NAMES GLES3/gl3.h)
+ 	find_library(OPENGLES3_LIBRARY NAMES GLESv3 GLESv2)
++	list(APPEND FEATURE_DEFINES BUILD_GLES3)
+ 	if(NOT OPENGLES3_INCLUDE_DIR OR NOT OPENGLES3_LIBRARY)
+ 		set(BUILD_GLES3 OFF CACHE BOOL "OpenGL|ES 3 not found" FORCE)
+ 	endif()
+@@ -912,18 +915,6 @@ else()
+ 	endif()
+ endif()
+ 
+-if(BUILD_GL)
+-	add_definitions(-DBUILD_GL)
+-endif()
+-
+-if(BUILD_GLES2)
+-	add_definitions(-DBUILD_GLES2)
+-endif()
+-
+-if(BUILD_GLES3)
+-	add_definitions(-DBUILD_GLES3)
+-endif()
+-
+ if(DISABLE_FRONTENDS)
+ 	set(BUILD_SDL OFF)
+ 	set(BUILD_QT OFF)
+-- 
+2.20.1
+

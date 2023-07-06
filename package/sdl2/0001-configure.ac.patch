@@ -1,0 +1,46 @@
+--- a/configure.ac	2023-05-25 11:35:58.844130666 +0300
++++ b/configure.ac	2023-05-25 11:37:59.537543359 +0300
+@@ -2376,15 +2376,13 @@
+                   , enable_video_kmsdrm=yes)
+ 
+     if  test x$enable_video = xyes && \
+-        test x$enable_video_kmsdrm = xyes && \
+-        test x$video_opengl_egl = xyes; then
++        test x$enable_video_kmsdrm = xyes; then
+ 
+         video_kmsdrm=no
+ 
+         PKG_CHECK_MODULES([LIBDRM], [libdrm >= 1.4.82], libdrm_avail=yes, libdrm_avail=no)
+-        PKG_CHECK_MODULES([LIBGBM], [gbm >= 11.1.0], libgbm_avail=yes, libgbm_avail=no)
+ 
+-        if test x$libdrm_avail = xyes -a x$libgbm_avail = xyes; then
++        if test x$libdrm_avail = xyes; then
+             video_kmsdrm=yes
+         fi
+ 
+@@ -2400,16 +2398,14 @@
+             AC_MSG_CHECKING(for kmsdrm dynamic loading support)
+             kmsdrm_shared=no
+             drm_lib=[`find_lib "libdrm.so.*" "$LIBDRM_LIBS"`]
+-            gbm_lib=[`find_lib "libgbm.so.*" "$LIBGBM_LIBS"`]
+             if test x$have_loadso != xyes && \
+                test x$enable_kmsdrm_shared = xyes; then
+                 AC_MSG_WARN([You must have SDL_LoadObject() support for dynamic kmsdrm loading])
+             fi
+             if test x$have_loadso = xyes && \
+-               test x$enable_kmsdrm_shared = xyes && test x$drm_lib != x && test x$gbm_lib != x; then
++               test x$enable_kmsdrm_shared = xyes && test x$drm_lib != x; then
+                 kmsdrm_shared=yes
+                 AC_DEFINE_UNQUOTED(SDL_VIDEO_DRIVER_KMSDRM_DYNAMIC, "$drm_lib", [ ])
+-                AC_DEFINE_UNQUOTED(SDL_VIDEO_DRIVER_KMSDRM_DYNAMIC_GBM, "$gbm_lib", [ ])
+                 AC_DEFINE_UNQUOTED(HAVE_KMSDRM_SHARED, "TRUE", [ ])
+                 SUMMARY_video="${SUMMARY_video} kmsdrm(dynamic)"
+             else
+@@ -2419,7 +2415,6 @@
+             AC_MSG_RESULT($kmsdrm_shared)
+             if test x$kmsdrm_shared = xyes; then
+                 echo "-- dynamic libdrm -> $drm_lib"
+-                echo "-- dynamic libgbm -> $gbm_lib"
+             fi
+             have_video=yes
+         fi

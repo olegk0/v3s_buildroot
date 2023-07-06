@@ -1,0 +1,181 @@
+--- a/src/video/kmsdrm/SDL_kmsdrmvideo.h	2022-01-14 18:06:54.000000000 +0300
++++ b/src/video/kmsdrm/SDL_kmsdrmvideo.h	2023-06-04 19:46:25.639436991 +0300
+@@ -27,14 +27,13 @@
+ #include <sys/stat.h>
+ #include <sys/mman.h>
+ #include <fcntl.h>
+-#include <libdrm/drm.h>
+-#include <libdrm/drm_fourcc.h>
+-#include <xf86drm.h>
+-#include <xf86drmMode.h>
++#include <drm_helper.h>
+ 
+ #ifndef _SDL_kmsdrmvideo_h
+ #define _SDL_kmsdrmvideo_h
+ 
++
++#define ENABLE_KMSDRM_DEBUG 1
+ #ifdef ENABLE_KMSDRM_DEBUG
+ #define kmsdrm_dbg_printf(fmt, ...) printf(fmt, ##__VA_ARGS__)
+ #else
+@@ -49,45 +48,6 @@
+ /* Hidden "this" pointer for the video functions */
+ #define _THIS	SDL_VideoDevice *this
+ 
+-/* Private display data */
+-typedef struct drm_prop_storage {
+-    drmModeObjectProperties *props;
+-	drmModePropertyRes **props_info;
+-    Uint32 obj_id;
+-    Uint32 obj_type;
+-    struct drm_prop_storage *next;
+-} drm_prop_storage;
+-
+-typedef struct drm_pipe {
+-    /* fb -> plane -> crtc -> encoder -> connector */
+-    Uint32 framebuffer;
+-    Uint32 plane;
+-    Uint32 crtc;
+-    Uint32 encoder;
+-    Uint32 connector;
+-    drmModeModeInfo *modes;
+-    Uint32 mode_count;
+-    Uint32 factor_w, factor_h;
+-    struct drm_pipe *next;
+-} drm_pipe;
+-
+-typedef struct drm_prop_arg {
+-	Uint32 obj_id;
+-	Uint32 obj_type;
+-	char name[DRM_PROP_NAME_LEN+1];
+-	Uint32 prop_id;
+-	Uint32 prop_drm_id;
+-	Uint64 value;
+-	int optional;
+-} drm_prop_arg;
+-
+-typedef struct drm_buffer {
+-    struct drm_mode_destroy_dumb req_destroy_dumb;
+-    struct drm_mode_create_dumb req_create;
+-    struct drm_mode_map_dumb req_map;
+-    Uint32 buf_id;
+-    void *map;
+-} drm_buffer;
+ 
+ typedef struct drm_input_dev {
+ 	char *path;
+@@ -95,35 +55,19 @@
+ 	struct drm_input_dev *next;
+ } drm_input_dev;
+ 
+-typedef enum {
+-	DRM_SCALING_MODE_FULLSCREEN,
+-	DRM_SCALING_MODE_ASPECT_RATIO,
+-	DRM_SCALING_MODE_INTEGER_SCALED,
+-	DRM_SCALING_MODE_END,
+-} drm_scaling_mode;
+ 
+ struct SDL_PrivateVideoData {
+     SDL_Rect **vid_modes;
+     int vid_mode_count;
+-
+-    int fd;
+-	Uint32 size;
+-	Uint32 handle;
+-	void *map;
+-    Uint8 *shadow_buffer;
+-
+-    drm_pipe *first_pipe;
+-    drm_pipe *active_pipe;
+-    drm_prop_storage *first_prop_store;
+-    drmModeAtomicReqPtr drm_req;
+-    drm_buffer buffers[3];
+-    Uint32 mode_blob_id;
+-    Uint32 front_buffer;
+-    Uint32 back_buffer;
+-    Uint32 queued_buffer;
+-    Uint32 *yuv_palette;
+-    struct drm_color_lut palette[256];
+-    Uint32 drm_gamma_lut_blob_id;
++    
++    Uint32 size;
++    Uint32 handle;
++    //void *map;
++    //Uint8 *shadow_buffer;
++    //Uint32 *yuv_palette;
++    
++    //struct drm_color_lut palette[256];
++    //Uint32 drm_gamma_lut_blob_id;
+ 
+ 	SDL_mutex *triplebuf_mutex;
+ 	SDL_cond *triplebuf_cond;
+@@ -131,16 +75,34 @@
+ 	int triplebuf_thread_stop;
+ 
+     drm_input_dev *keyboards, *mice;
+-    drm_scaling_mode scaling_mode;
+ 
+     int w, h, crtc_w, crtc_h;
+     int bpp;
+-    int has_damage_clips;
++    
++    //drm helper
++    DhHwInfo *hw_info;
++    DhPlaneInfo *plane_info;
++    //con input
++	int current_vt;
++	int saved_vt;
++	int keyboard_fd;
++	int saved_kbd_mode;
++	struct termios saved_kbd_termios;
++
++	int mouse_fd;
++#if SDL_INPUT_TSLIB
++	struct tsdev *ts_dev;
++#endif
++	int switched_away;
+ };
+ 
++
++#define drm_crtc_w           (this->hidden->crtc_w)
++#define drm_crtc_h           (this->hidden->crtc_h)
++#define drm_plane_info       (this->hidden->plane_info)
++#define drm_hw_info          (this->hidden->hw_info)
+ #define drm_vid_modes        (this->hidden->vid_modes)
+ #define drm_vid_mode_count   (this->hidden->vid_mode_count)
+-#define drm_fd               (this->hidden->fd)
+ #define drm_size             (this->hidden->size)
+ #define drm_handle           (this->hidden->handle)
+ #define drm_map              (this->hidden->map)
+@@ -149,13 +111,9 @@
+ #define drm_first_prop_store (this->hidden->first_prop_store)
+ #define drm_buffers          (this->hidden->buffers)
+ #define drm_mode_blob_id     (this->hidden->mode_blob_id)
+-#define drm_front_buffer     (this->hidden->front_buffer)
+-#define drm_back_buffer      (this->hidden->back_buffer)
+-#define drm_queued_buffer    (this->hidden->queued_buffer)
+ #define drm_yuv_palette      (this->hidden->yuv_palette)
+ #define drm_palette          (this->hidden->palette)
+ #define drm_palette_blob_id  (this->hidden->drm_gamma_lut_blob_id)
+-#define drm_active_pipe      (this->hidden->active_pipe)
+ #define drm_req_destroy_dumb (this->hidden->req_destroy_dumb)
+ #define drm_req_create       (this->hidden->req_create)
+ #define drm_req_map          (this->hidden->req_map)
+@@ -164,4 +122,17 @@
+ #define drm_triplebuf_thread (this->hidden->triplebuf_thread)
+ #define drm_triplebuf_thread_stop (this->hidden->triplebuf_thread_stop)
+ 
++
++#define current_vt		(this->hidden->current_vt)
++#define saved_vt		(this->hidden->saved_vt)
++#define keyboard_fd		(this->hidden->keyboard_fd)
++#define saved_kbd_mode		(this->hidden->saved_kbd_mode)
++#define saved_kbd_termios	(this->hidden->saved_kbd_termios)
++#define mouse_fd		(this->hidden->mouse_fd)
++#if SDL_INPUT_TSLIB
++#define ts_dev			(this->hidden->ts_dev)
++#endif
++#define switched_away		(this->hidden->switched_away)
++
++
+ #endif /* _SDL_kmsdrmvideo_h */

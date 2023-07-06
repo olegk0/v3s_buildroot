@@ -1,0 +1,26 @@
+#!/bin/ash
+
+
+while true
+do
+
+    game_sel.lua
+    
+    #{ params=$( { { game_sel.lua; } 1>&4 ; } 3>&1); } 4>&1
+
+    params=`cat /tmp/gname`
+    rm -f /tmp/gname
+    echo $params
+    
+    if [ -z "${params}" ]; then
+#	reset
+	exit
+    fi
+    prg=`echo "$params" |cut -d'|' -f 1`
+    #echo $prg
+    params=`echo "$params" |cut -d'|' -f 2`
+    #echo $params
+
+    $prg "$params"
+
+done

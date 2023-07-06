@@ -1,0 +1,5 @@
+config BR2_PACKAGE_SDL2_TEST
+	bool "sdl2_test"
+	depends on BR2_PACKAGE_SDL2
+	help
+	  SDL2 test

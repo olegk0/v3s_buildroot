@@ -1,0 +1,6 @@
+config BR2_PACKAGE_DOOM64
+	bool "doom64"
+	depends on BR2_PACKAGE_SDL2
+	depends on BR2_PACKAGE_FLUIDSYNTH
+	help
+	  Doom64

@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "algorithm": "cpp",
+        "condition_variable": "cpp",
+        "*.inc": "cpp",
+        "iostream": "cpp"
+    }
+}

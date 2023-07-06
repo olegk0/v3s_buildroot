@@ -1,0 +1,10 @@
+--- a/gui_xboy.c	2023-05-06 23:16:57.809727608 +0300
++++ b/gui_xboy.c	2023-05-06 23:17:06.213805567 +0300
+@@ -21,6 +21,7 @@
+ #include <dirent.h>
+ #include <SDL.h>
+ #include <SDL_ttf.h>
++#include <fcntl.h>
+ 
+ #define GUI_DEBUG 0
+ #define MAX_ITEMS 7

@@ -1,0 +1,41 @@
+From ffeb5cfe2779b5f0c633e13e15adef651658d160 Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Tue, 23 Mar 2021 19:34:08 -0700
+Subject: [PATCH] GB Video: Discard SGB packets in non-SGB mVLs
+
+---
+ include/mgba/internal/gb/renderers/proxy.h | 1 +
+ src/gb/extra/proxy.c                       | 5 ++++-
+ 2 files changed, 5 insertions(+), 1 deletion(-)
+
+--- a/include/mgba/internal/gb/renderers/proxy.h
++++ b/include/mgba/internal/gb/renderers/proxy.h
+@@ -17,6 +17,7 @@
+ 	struct GBVideoRenderer d;
+ 	struct GBVideoRenderer* backend;
+ 	struct mVideoLogger* logger;
++	enum GBModel model;
+ 
+ 	struct GBObj objThisLine[40];
+ 	size_t oamMax;
+--- a/src/gb/extra/proxy.c
++++ b/src/gb/extra/proxy.c
+@@ -107,6 +107,7 @@
+ 
+ 	_init(proxyRenderer);
+ 
++	proxyRenderer->model = model;
+ 	proxyRenderer->backend->init(proxyRenderer->backend, model, borders);
+ }
+ 
+@@ -170,7 +171,9 @@
+ 			break;
+ 		case BUFFER_SGB:
+ 			logger->readData(logger, sgbPacket, 16, true);
+-			proxyRenderer->backend->writeSGBPacket(proxyRenderer->backend, sgbPacket);
++			if (proxyRenderer->model & GB_MODEL_SGB) {
++				proxyRenderer->backend->writeSGBPacket(proxyRenderer->backend, sgbPacket);
++			}
+ 			break;
+ 		}
+ 		break;

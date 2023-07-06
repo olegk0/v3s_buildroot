@@ -1,0 +1,32 @@
+From 32b7cc2fba9526ca64e561b433d8c7df13f5f066 Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Wed, 24 Mar 2021 18:59:56 -0700
+Subject: [PATCH] GB MBC: Force minimum SRAM size on rare MBCs that always have
+ SRAM
+
+---
+ src/gb/mbc.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+--- a/src/gb/mbc.c
++++ b/src/gb/mbc.c
+@@ -300,6 +300,9 @@
+ 		mLOG(GB_MBC, WARN, "unimplemented MBC: MBC6");
+ 		gb->memory.mbcWrite = _GBMBC6;
+ 		gb->memory.mbcRead = _GBMBC6Read;
++		if (!gb->sramSize) {
++			gb->sramSize = GB_SIZE_EXTERNAL_RAM; // Force minimum size for convenience
++		}
+ 		break;
+ 	case GB_MBC7:
+ 		gb->memory.mbcWrite = _GBMBC7;
+@@ -332,6 +335,9 @@
+ 	case GB_POCKETCAM:
+ 		gb->memory.mbcWrite = _GBPocketCam;
+ 		gb->memory.mbcRead = _GBPocketCamRead;
++		if (!gb->sramSize) {
++			gb->sramSize = GB_SIZE_EXTERNAL_RAM; // Force minimum size for convenience
++		}
+ 		if (gb->memory.cam && gb->memory.cam->startRequestImage) {
+ 			gb->memory.cam->startRequestImage(gb->memory.cam, GBCAM_WIDTH, GBCAM_HEIGHT, mCOLOR_ANY);
+ 		}

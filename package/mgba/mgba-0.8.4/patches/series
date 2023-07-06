@@ -1,0 +1,12 @@
+exclude-rapidjson.patch
+exclude-inih.patch
+CMake-Move-gl.c-and-gles2.c-to-FEATURE_SRC.patch
+CMake-Move-BUILD_GL-flags-to-FEATURE_DEFINES.patch
+GBA-Serialize-Fix-alignment-check-when-loading-state.patch
+Libretro-Only-set-camera-peripheral-when-it-is-avail.patch
+Core-Fix-destroying-an-mVL-with-an-invalid-channel-c.patch
+GB-MBC-Remove-unused-SRAM-size.patch
+GB-MBC-Force-minimum-SRAM-size-on-rare-MBCs-that-alw.patch
+GB-Video-Don-t-rendering-negative-batches.patch
+GB-Video-Fix-deserializing-negative-LX-state.patch
+GB-Video-Discard-SGB-packets-in-non-SGB-mVLs.patch

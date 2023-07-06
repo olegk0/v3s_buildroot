@@ -1,0 +1,22 @@
+From 89c9611d90183b41243c2444a264cd75ddb534e0 Mon Sep 17 00:00:00 2001
+From: YuzukiTsuru <gloomyghost@gloomyghost.com>
+Date: Tue, 12 Apr 2022 10:12:59 +0800
+Subject: [PATCH 2/3] add uboot dtc build
+
+---
+ scripts/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/scripts/Makefile b/scripts/Makefile
+index ce641b9..e27308a 100644
+--- a/scripts/Makefile
++++ b/scripts/Makefile
+@@ -19,4 +19,4 @@ build_docproc: $(obj)/docproc
+ 
+ # Let clean descend into subdirs
+ subdir-	+= basic kconfig
+-#subdir-$(CONFIG_DTC)	+= dtc
++subdir-$(CONFIG_DTC)	+= dtc
+-- 
+2.17.1
+

@@ -1,0 +1,20 @@
+--- a/drivers/clk/sunxi-ng/ccu_nkmp.c	2023-07-04 16:26:54.904259310 +0300
++++ b/drivers/clk/sunxi-ng/ccu_nkmp.c	2023-07-04 16:27:44.360893614 +0300
+@@ -145,7 +145,7 @@
+ 	_nkmp.max_n = nkmp->n.max ?: 1 << nkmp->n.width;
+ 	_nkmp.min_k = nkmp->k.min ?: 1;
+ 	_nkmp.max_k = nkmp->k.max ?: 1 << nkmp->k.width;
+-	_nkmp.min_m = 1;
++	_nkmp.min_m = 2;
+ 	_nkmp.max_m = nkmp->m.max ?: 1 << nkmp->m.width;
+ 	_nkmp.min_p = 1;
+ 	_nkmp.max_p = nkmp->p.max ?: 1 << ((1 << nkmp->p.width) - 1);
+@@ -176,7 +176,7 @@
+ 	_nkmp.max_n = nkmp->n.max ?: 1 << nkmp->n.width;
+ 	_nkmp.min_k = nkmp->k.min ?: 1;
+ 	_nkmp.max_k = nkmp->k.max ?: 1 << nkmp->k.width;
+-	_nkmp.min_m = 1;
++	_nkmp.min_m = 2;
+ 	_nkmp.max_m = nkmp->m.max ?: 1 << nkmp->m.width;
+ 	_nkmp.min_p = 1;
+ 	_nkmp.max_p = nkmp->p.max ?: 1 << ((1 << nkmp->p.width) - 1);

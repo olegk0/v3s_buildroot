@@ -1,0 +1,11 @@
+config BR2_PACKAGE_LUA_SDL
+	bool "lua-sdl"
+	depends on !BR2_STATIC_LIBS
+	depends on !BR2_PACKAGE_LUA_5_4
+	select BR2_PACKAGE_SDL
+	help
+	  Lua-SDL is a pure C binding of SDL to Lua 5.1, Lua 5.2,
+	  Lua 5.3, and LuaJIT.
+
+comment "lua-sdl needs a toolchain w/ dynamic library, Lua <= 5.3"
+	depends on BR2_STATIC_LIBS || BR2_PACKAGE_LUA_5_4

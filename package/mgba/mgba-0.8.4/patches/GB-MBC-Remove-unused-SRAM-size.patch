@@ -1,0 +1,26 @@
+From 2a7626f1336048e4ad25c2af3b1f2118d97b4fe8 Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Wed, 24 Mar 2021 18:54:42 -0700
+Subject: [PATCH] GB MBC: Remove unused SRAM size
+
+---
+ src/gb/mbc.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/src/gb/mbc.c b/src/gb/mbc.c
+index c17de4ce5..53d577452 100644
+--- a/src/gb/mbc.c
++++ b/src/gb/mbc.c
+@@ -236,9 +236,6 @@ void GBMBCInit(struct GB* gb) {
+ 		case 0:
+ 			gb->sramSize = 0;
+ 			break;
+-		case 1:
+-			gb->sramSize = 0x800;
+-			break;
+ 		default:
+ 		case 2:
+ 			gb->sramSize = 0x2000;
+-- 
+2.20.1
+

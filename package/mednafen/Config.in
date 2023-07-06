@@ -1,0 +1,6 @@
+config BR2_PACKAGE_MEDNAFEN
+	bool "mednafen"
+	depends on BR2_PACKAGE_SDL
+	select BR2_PACKAGE_FLAC
+	help
+	  Mednafen game consoles emul

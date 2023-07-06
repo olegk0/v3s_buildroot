@@ -1,0 +1,21 @@
+--- a/src/video/kmsdrm/SDL_kmsdrmmisc_c.h	2022-01-14 18:06:54.000000000 +0300
++++ b/src/video/kmsdrm/SDL_kmsdrmmisc_c.h	2023-06-03 20:28:21.621876570 +0300
+@@ -3,17 +3,6 @@
+ #ifndef _SDL_kmsdrmmisc_h
+ #define _SDL_kmsdrmmisc_h
+ 
+-void dump_mode(drmModeModeInfo *mode);
+-int save_drm_pipe(_THIS, Uint32 plane, Uint32 crtc, Uint32 enc, drmModeConnector *conn);
+-Uint32 get_prop_id(_THIS, Uint32 obj_id, const char *prop_name);
+-int acquire_properties(_THIS, Uint32 id, Uint32 type);
+-int get_property(_THIS, uint32_t obj_id, const char *name, uint64_t *value);
+-int add_property(_THIS, drmModeAtomicReq *req, uint32_t obj_id, const char *name, int opt, uint64_t value);
+-int find_property(_THIS, uint32_t obj_id, const char *name);
+-int free_drm_prop_storage(_THIS);
+-int free_drm_pipe(_THIS);
+-drmModeModeInfo *find_pipe_closest_refresh(drm_pipe *pipe, float refresh);
+-drmModeModeInfo *find_pipe_closest_res(drm_pipe *pipe, int width, int height);
+-drmModeModeInfo *find_closest_res(_THIS, int width, int height);
++void KMSDRM_RegisterVidMode(_THIS, int width, int height);
+ 
+ #endif /* _SDL_kmsdrmmisc_h */

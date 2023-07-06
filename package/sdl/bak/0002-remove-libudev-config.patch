@@ -1,0 +1,21 @@
+--- a/configure.in	2023-06-01 13:06:27.239816054 +0300
++++ b/configure.in	2023-06-01 13:09:39.038086668 +0300
+@@ -1400,15 +1400,13 @@
+             , enable_kmsdrm_debug=no)
+ 
+         LIBDRM_REQUIRED_VERSION=2.4.46
+-		LIBUDEV_REQUIRED_VERSION=1.6.3
+         AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
+         
+         AC_MSG_CHECKING(for kms/drm support)
+         if test x$PKG_CONFIG != xno; then
+-            if $PKG_CONFIG --atleast-version $LIBDRM_REQUIRED_VERSION libdrm &&
+-				$PKG_CONFIG --atleast-version $LIBUDEV_REQUIRED_VERSION libudev; then
+-                LIBDRM_CFLAGS=`$PKG_CONFIG --cflags libdrm libudev`
+-                LIBDRM_LIBS=`$PKG_CONFIG --libs libdrm libudev`
++            if $PKG_CONFIG --atleast-version $LIBDRM_REQUIRED_VERSION libdrm; then
++                LIBDRM_CFLAGS=`$PKG_CONFIG --cflags libdrm`
++                LIBDRM_LIBS=`$PKG_CONFIG --libs libdrm`;LIBDRM_LIBS+=" -ldrm_helper"
+                 video_kmsdrm=yes
+             fi
+         fi

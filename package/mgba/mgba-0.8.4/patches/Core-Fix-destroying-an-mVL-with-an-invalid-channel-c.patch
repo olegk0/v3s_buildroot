@@ -1,0 +1,24 @@
+From 44f031d89b9e33338916aeefddb94c3b494a47af Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Tue, 23 Mar 2021 19:35:01 -0700
+Subject: [PATCH] Core: Fix destroying an mVL with an invalid channel count
+
+---
+ src/feature/video-logger.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/feature/video-logger.c b/src/feature/video-logger.c
+index b01e1c55d..ae2fa046e 100644
+--- a/src/feature/video-logger.c
++++ b/src/feature/video-logger.c
+@@ -613,6 +613,7 @@ bool _readHeader(struct mVideoLogContext* context) {
+ 
+ 	LOAD_32LE(context->nChannels, 0, &header.nChannels);
+ 	if (context->nChannels > mVL_MAX_CHANNELS) {
++		context->nChannels = 0;
+ 		return false;
+ 	}
+ 
+-- 
+2.20.1
+

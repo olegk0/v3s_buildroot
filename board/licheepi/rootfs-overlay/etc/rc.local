@@ -1,0 +1,8 @@
+#!/bin/ash
+# Local startup file, executed after system is up and running
+
+inputattach --daemon --baud 19200 -ps2m /dev/ttyS1
+
+alsactl --file /etc/asound.state restore
+
+ntpdate ru.pool.ntp.org &

@@ -1,0 +1,5 @@
+config BR2_PACKAGE_VISUALBOYADVANCE
+	bool "visualboyadvance"
+	depends on BR2_PACKAGE_SDL
+	help
+	  VBA emul

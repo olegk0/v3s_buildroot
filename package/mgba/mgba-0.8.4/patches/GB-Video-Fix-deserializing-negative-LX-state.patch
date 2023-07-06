@@ -1,0 +1,25 @@
+From f34fa2b6af4f7cf196cc7ab76b6c10acff11b8b1 Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Tue, 23 Mar 2021 19:51:03 -0700
+Subject: [PATCH] GB Video: Fix deserializing negative LX state
+
+---
+ src/gb/video.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/gb/video.c b/src/gb/video.c
+index ccaae7717..2dca89f17 100644
+--- a/src/gb/video.c
++++ b/src/gb/video.c
+@@ -867,6 +867,8 @@ void GBVideoDeserialize(struct GBVideo* video, const struct GBSerializedState* s
+ 	LOAD_16LE(video->ly, 0, &state->video.ly);
+ 	LOAD_32LE(video->frameCounter, 0, &state->video.frameCounter);
+ 	LOAD_32LE(video->dotClock, 0, &state->video.dotCounter);
++	video->x = (int16_t) video->x; // Ensure proper sign extension--the LOAD_16 is unsigned
++
+ 	video->vramCurrentBank = state->video.vramCurrentBank;
+ 
+ 	GBSerializedVideoFlags flags = state->video.flags;
+-- 
+2.20.1
+

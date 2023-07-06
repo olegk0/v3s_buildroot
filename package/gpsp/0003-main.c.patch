@@ -1,0 +1,48 @@
+--- a/main.c	2023-05-07 21:59:59.538686387 +0300
++++ b/main.c	2023-05-07 22:00:39.983049811 +0300
+@@ -24,7 +24,7 @@
+ #include <linux/fb.h>
+ #include <linux/omapfb.h>
+ #include <SDL.h>
+-#include <SDL_ttf.h>
++//#include <SDL_ttf.h>
+ #include "common.h"
+ #include <fcntl.h>
+
+@@ -28,8 +28,8 @@
+ #include "common.h"
+ #include <fcntl.h>
+ 
+-extern TTF_Font *font;
+-extern TTF_Font *font_small;
++//extern TTF_Font *font;
++//extern TTF_Font *font_small;
+ static int fbdev = -1;
+ #ifdef PSP_BUILD
+ 
+@@ -306,9 +306,9 @@
+     init_input();
+     video_resolution_large();
+ 
+-    TTF_Init();
+-    font = TTF_OpenFont("font.ttf", 20);
+-    font_small = TTF_OpenFont("font_small.ttf", 16);
++//    TTF_Init();
++//    font = TTF_OpenFont("font.ttf", 20);
++//    font_small = TTF_OpenFont("font_small.ttf", 16);
+     if (argc > 1)
+     {
+         if (load_gamepak(argv[1]) == -1)
+@@ -901,9 +901,9 @@
+ 
+     sound_exit();
+ 
+-    TTF_CloseFont(font);
+-    TTF_CloseFont(font_small);
+-    TTF_Quit();
++//    TTF_CloseFont(font);
++//    TTF_CloseFont(font_small);
++//    TTF_Quit();
+ 
+ #ifdef REGISTER_USAGE_ANALYZE
+     print_register_usage();

@@ -1,0 +1,5 @@
+config BR2_PACKAGE_DRM_HELPER
+	bool "drm_helper"
+	depends on BR2_PACKAGE_LIBDRM
+	help
+	  DRM-KMS helper lib

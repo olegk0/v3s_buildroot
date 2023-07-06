@@ -1,0 +1,6 @@
+config BR2_PACKAGE_EPIPHANY
+	bool "epiphany"
+	depends on BR2_PACKAGE_SDL
+	select BR2_PACKAGE_ZLIB
+	help
+	  EPIPHANY game

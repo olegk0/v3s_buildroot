@@ -1,0 +1,158 @@
+.TH DOOM64EX "6" "September 2016" "Doom64EX" "Games"
+.SH NAME
+doom64ex \- Recreation of Midway's Doom64 for modern operating systems.
+.SH SYNOPSIS
+.B doom64ex
+[\fIoptions...\fR]
+.P
+\fBdoom64ex\fR \-wadgen \fI<rom\-file>\fR
+.SH DESCRIPTION
+Doom 64 is a Doom spin-off for the Nintendo 64.
+.P
+\fBdoom64ex\fR is a faithful recreation of the original Nintendo 64 game using
+PC Doom's source code as the base.
+.P
+\fBdoom64ex\fR requires the data files from the original game. These must be
+extracted from a Nintendo 64 ROM image, using the \fBdoom64ex\fR \-wadgen
+command (see \fBDATA FILES\fR, below).
+.SH OPTIONS
+.SS File Options
+.TP
+\fB\-iwad\fR \fI<wadfile>\fR
+The IWAD file to use.
+.TP
+\fB\-file\fR \fI<wadfile>\fR
+Add a PWAD (patch WAD). Used for custom levels, music, etc.
+.TP
+\fB\-config\fR \fI<configfile>\fR
+Use \fIconfigfile\fR instead of the default config file (which is
+\fI$XDG_DATA_HOME/doom64ex/config.cfg\fR).
+.SS Game Options
+.TP
+\fB\-warp\fR \fI<level>\fR
+Skip the intro, start the game at the given level. Valid level numbers
+are 1 through 32. Warping to level 33 plays the intro demo.
+.TP
+\fB\-nomonsters\fR
+Self\-explanatory. Usually used for multiplayer deathmatch games.
+.TP
+\fB\-fast\fR
+Fast monster mode (similar to "Nightmare" difficulty level).
+.TP
+\fB\-respawn\fR
+Monsters respawn after being killed (similar to "Nightmare" difficulty level).
+.TP
+\fB\-respawnitem\fR
+Items respawn after being picked up.
+.TP
+\fB\-skill\fR \fI<skill\-level>\fR
+Set skill level (useful with \fB\-warp\fR). Level is a number from 1 to 4, where
+1 is "Be Gentle" and 4 is "Watch Me Die".
+.TP
+\fB\-turbo\fR \fI<speed>\fR
+Enables turbo mode based on speed value.
+.TP
+\fB\-devparm\fR
+Enables developer mode. Very useful for testing custom wads (see devparm.txt
+for more information about using developer mode).
+.TP
+\fB\-heapsize \fI<size>\fR
+Allocate a <size> MB heap (default is 32).
+.TP
+\fB\-setvars\fR \fI<cvarname>\fR \fI<value>\fR [\fI<cvarname>\fR \fI<value>\fR ...]
+Set a cvar value. Can set multiple cvars following \fB\-setvars\fR.
+.SS Video/Audio Options
+.TP
+\fB\-fullscreen
+Run the game fullscreen, regardless of the setting in config.cfg.
+.TP
+\fB\-window
+Run the game in a window, regardless of the setting in config.cfg.
+.TP
+\fB\-width\fR \fI<pixels>\fR, \fB\-height\fR \fI<pixels>\fR
+Set video mode. These options (unlike other command line options) will be
+stored in the config file.
+.TP
+\fB\-nosound\fR
+Disable sound interface, use this if you're having problems such as
+"Unable to create primary sound buffer".
+.TP
+\fB\-nomusic\fR
+Disable ingame music.
+.TP
+\fB\-nogun\fR
+Don't draw player's gun sprite on screen.
+.SS Demo Options
+.TP
+\fB\-record \fI<lumpname>\fR
+Record a demo. The demo will be saved in a file called \fI<lumpname>.lmp\fR. The \fI.lmp\fR
+is always added, so don't include it in the lump name.
+.TP
+\fB\-playdemo \fI<filename>\fR
+Play back a demo. If the filename has no file
+extension, ".lmp" will be appended. Press the space bar to stop the demo.
+.SS Network Options
+Note that the networking support in \fBdoom64ex\fR is experimental.
+.TP
+\fB\-server\fR
+Host a game. When one or more clients connects, press any
+key to begin the network game.
+.TP
+\fB-connect\fR \fI<ipaddress>\fR
+Connect to a game hosted by the server.
+.TP
+\fB\-port\fR \fI<n>\fR
+Specify network UDP port for \fB\-connect\fR or \fB\-server\fR options. Default
+port is 2342.
+.SH DATA FILES
+\fBdoom64ex\fR (and Doom\-related games in general) load all game resources
+such as graphics and levels from a file known as an IWAD file. In
+addition, \fBdoom64ex\fR loads its sounds from a SoundFont file.
+.P
+The assets for Doom 64 must be extracted from a Nintendo 64 ROM image.
+\fBdoom64ex\fR includes a command to do this. Usage:
+.P
+\fBdoom64ex\fR \-wadgen \fI<rom\-file>\fR
+.P
+\fI<rom\-file>\fR must be a Doom 64 ROM image, in .z64 format. The files \fBdoom64.wad\fR
+and \fBdoomsnd.sf2\fR will be written to \fI$XDG_DATA_HOME/doom64ex/\fR.
+.SH OTHER FILES
+.TP
+\fI$XDG_DATA_HOME/doom64ex/\fR
+The config file (\fBconfig.cfg\fR) is located here.
+It will be created if it doesn't already exist. Saved games are also stored here
+as \fBdoomsav\fR\fIn\fR\fB.dsg\fR, where \fIn\fR is the save slot, numbered 0 to
+7.
+.SH AUTHORS
+Samuel 'Kaiser' Villarreal <svkaiser@gmail.com>
+.br
+Doom64EX Author.
+.P
+Zohar 'dotfloat' Malamant <dotfloat@gmail.com>
+.br
+Current maintainer and developer of the project.
+.P
+Paul Brook
+.br
+Author of the Doom3D source port in which Doom64 EX was originally based off of.
+.P
+James 'Quasar' Haley <haleyjd@hotmail.com>
+.br
+For providing wisdom when it comes to working with all the backend stuff such as
+Doom's zone memory allocator. Also provided the macro script compiler utility.
+.P
+Simon 'Fraggle' Howard
+.br
+Networking system
+.P
+Lee Killough
+.br
+For just about anything that fixed all of Doom's mistakes, bugs, and errors.
+.P
+Team TNT
+.br
+For all Boom related enhancements and fixes.
+.P
+B. Watson <yalhcru@gmail.com>
+.br
+Linux port and various minor bugfixes.

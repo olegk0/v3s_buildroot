@@ -1,0 +1,10 @@
+config BR2_PACKAGE_LUA_NEWT
+	bool "lua-newt"
+	depends on !BR2_STATIC_LIBS
+	depends on BR2_PACKAGE_NEWT
+	help
+	  Lua C binding for the newt lib.
+
+comment "lua-newt needs a newt"
+        depends on !BR2_PACKAGE_NEWT
+        depends on BR2_STATIC_LIBS

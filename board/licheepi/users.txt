@@ -1,0 +1,2 @@
+iam -1 iam -1 123 /home/iam /bin/sh - iam user
+slava -1 slava -1 123 /home/slava /bin/sh - slava user

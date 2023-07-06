@@ -1,0 +1,11 @@
+prefix=/home/iam/workspace/SDL/Browser/netsurf-all-3.10.orig/inst-framebuffer
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libdom
+Description: W3C DOM implementation
+Version: 0.4.1
+Requires: libhubbub
+Libs: -L${libdir} -ldom -lexpat
+Cflags: -I${includedir}

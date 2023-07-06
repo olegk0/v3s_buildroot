@@ -1,0 +1,11 @@
+prefix=/home/iam/workspace/SDL/Browser/netsurf-all-3.10.orig/inst-framebuffer
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libhubbub
+Description: HTML5 parsing library
+Version: 0.3.7
+Requires: libparserutils
+Libs: -L${libdir} -lhubbub
+Cflags: -I${includedir}

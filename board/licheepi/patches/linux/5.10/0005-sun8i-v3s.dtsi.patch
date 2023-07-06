@@ -1,0 +1,77 @@
+--- a/arch/arm/boot/dts/sun8i-v3s.dtsi	2023-06-09 21:32:23.488551822 +0300
++++ b/arch/arm/boot/dts/sun8i-v3s.dtsi	2023-06-09 21:53:51.719893954 +0300
+@@ -69,11 +69,12 @@
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 
+-		cpu@0 {
++		cpu0: cpu@0 {
+ 			compatible = "arm,cortex-a7";
+ 			device_type = "cpu";
+ 			reg = <0>;
+ 			clocks = <&ccu CLK_CPU>;
++			operating-points-v2 = <&cpu_opp_table>;
+ 		};
+ 	};
+ 
+@@ -83,6 +84,60 @@
+ 		status = "disabled";
+ 	};
+ 
++	cpu_opp_table: opp-table-cluster0 {
++		compatible = "operating-points-v2";
++		opp-shared;
++
++		opp-400000000 {
++			opp-hz = /bits/ 64 <400000000>;
++			opp-microvolt = <840000>;
++			clock-latency-ns = <244144>; /* 8 32k periods */
++		};
++
++		opp-600000000 {
++			opp-hz = /bits/ 64 <600000000>;
++			opp-microvolt = <840000>;
++			clock-latency-ns = <244144>; /* 8 32k periods */
++		};
++
++		opp-700000000 {
++			opp-hz = /bits/ 64 <700000000>;
++			opp-microvolt = <840000>;
++			clock-latency-ns = <244144>; /* 8 32k periods */
++		};
++
++		opp-800000000 {
++			opp-hz = /bits/ 64 <800000000>;
++			opp-microvolt = <840000>;
++			clock-latency-ns = <244144>; /* 8 32k periods */
++		};
++
++		opp-900000000 {
++			opp-hz = /bits/ 64 <900000000>;
++			opp-microvolt = <840000>;
++			clock-latency-ns = <244144>; /* 8 32k periods */
++		};
++
++		opp-1000000000 {
++			opp-hz = /bits/ 64 <1000000000>;
++			opp-microvolt = <840000>;
++			clock-latency-ns = <244144>; /* 8 32k periods */
++		};
++
++		opp-1100000000 {
++			opp-hz = /bits/ 64 <1100000000>;
++			opp-microvolt = <840000>;
++			clock-latency-ns = <244144>; /* 8 32k periods */
++		};
++
++		opp-1200000000 {
++			opp-hz = /bits/ 64 <1200000000>;
++			opp-microvolt = <840000>;
++			clock-latency-ns = <244144>; /* 8 32k periods */
++		};
++	};
++
++
+ 	timer {
+ 		compatible = "arm,armv7-timer";
+ 		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,

@@ -1,0 +1,95 @@
+--- a/arch/arm/boot/dts/sun8i-v3s-licheepi-zero-dock.dts	2023-05-22 20:08:02.983411919 +0300
++++ b/arch/arm/boot/dts/sun8i-v3s-licheepi-zero-dock.dts	2023-05-24 00:34:00.791631328 +0300
+@@ -57,6 +57,53 @@
+ 		/* The LEDs use PG0~2 pins, which conflict with MMC1 */
+ 		status = "disabled";
+ 	};
++	
++        gpio-poweroff {
++                compatible = "gpio-poweroff";
++                pinctrl-0 = <&pmx_poweroff>;
++                pinctrl-names = "default";
++                gpios = <&pio 1 3 GPIO_ACTIVE_LOW>; /* (PB3) */
++		timeout-ms = <5000>;
++        };
++
++        panel: panel {
++                #address-cells = <1>;
++                #size-cells = <0>;
++
++                port@0 {
++                        reg = <0>;
++                        //backlight = <&backlight>;
++                        #address-cells = <1>;
++                        #size-cells = <0>;
++
++                        panel_input: endpoint@0 {
++                                reg = <0>;
++                                remote-endpoint = <&tcon0_out_lcd>;
++                        };
++                };
++        };
++
++};
++
++&panel {
++        compatible = "innolux,at070tn83", "simple-panel";
++};
++
++&de {
++        status = "okay";
++};
++
++&tcon0 {
++        pinctrl-names = "default";
++        pinctrl-0 = <&lcd_rgb666_pins_a>;
++        status = "okay";
++};
++
++&tcon0_out {
++        tcon0_out_lcd: endpoint@0 {
++                reg = <0>;
++                remote-endpoint = <&panel_input>;
++        };
+ };
+ 
+ &codec {
+@@ -84,7 +131,7 @@
+ 
+ &lradc {
+ 	vref-supply = <&reg_vcc3v0>;
+-	status = "okay";
++	status = "disabled";
+ 
+ 	button-200 {
+ 		label = "Volume Up";
+@@ -115,6 +162,24 @@
+ 	};
+ };
+ 
++&pio {
++        uart2_pb_pins: uart2-pb-pins {
++                pins = "PB0", "PB1";
++                function = "uart2";
++        };
++	
++	pmx_poweroff: pmx-poweroff  {
++                pins = "PB2";
++                function = "gpio_out";
++        };
++};
++
++&uart2 {
++	pinctrl-0 = <&uart2_pb_pins>;
++	pinctrl-names = "default";
++	status = "okay";
++};
++
+ &i2c0 {
+ 	gt911: touchscreen@14 {
+         compatible = "goodix,gt911";
+@@ -127,3 +192,4 @@
+         /* touchscreen-swapped-x-y */
+     };
+ };
++

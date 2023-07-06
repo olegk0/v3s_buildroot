@@ -1,0 +1,37 @@
+Description: Use system libinih-dev
+ The vendored inih and its license text are excluded via Files-Excluded.
+ Use the system ini.h and inih library.
+ Don't try to install the removed license file.
+ -linih is added to OS_LIB to ensure the libretro plugin also links it.
+Author: Ryan Tandy <ryan@nardis.ca>
+Bug-Debian: https://bugs.debian.org/958247
+--- a/src/util/configuration.c
++++ b/src/util/configuration.c
+@@ -9,7 +9,7 @@
+ #include <mgba-util/string.h>
+ #include <mgba-util/vfs.h>
+ 
+-#include "third-party/inih/ini.h"
++#include <ini.h>
+ 
+ #include <float.h>
+ 
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -80,7 +80,7 @@
+ 	endif()
+ endif()
+ 
+-file(GLOB THIRD_PARTY_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/third-party/inih/*.c)
++list(APPEND OS_LIB inih)
+ set(CORE_VFS_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/util/vfs/vfs-mem.c ${CMAKE_CURRENT_SOURCE_DIR}/src/util/vfs/vfs-fifo.c)
+ set(VFS_SRC)
+ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR}/include)
+@@ -1011,7 +1011,6 @@
+ 
+ # Packaging
+ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/licenses/blip_buf.txt DESTINATION ${CMAKE_INSTALL_DOCDIR}/licenses COMPONENT ${BINARY_NAME})
+-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/licenses/inih.txt DESTINATION ${CMAKE_INSTALL_DOCDIR}/licenses COMPONENT ${BINARY_NAME})
+ if(USE_DISCORD_RPC)
+ 	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/licenses/discord-rpc.txt DESTINATION ${CMAKE_INSTALL_DOCDIR}/licenses COMPONENT ${BINARY_NAME})
+ 	if(WIN32)

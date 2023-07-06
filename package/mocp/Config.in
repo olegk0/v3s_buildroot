@@ -1,0 +1,7 @@
+config BR2_PACKAGE_MOCP
+	bool "mocp"
+	select BR2_PACKAGE_BERKELEYDB
+	select BR2_PACKAGE_LIBTOOL
+	help
+	  MOC (music on console) is a console audio player 
+	  for Linux/Unix designed to be powerful and easy to use.

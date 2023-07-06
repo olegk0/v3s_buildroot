@@ -1,0 +1,26 @@
+From 1b81c08de8fd10035d5ae060b81747c6b880c906 Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Wed, 24 Mar 2021 18:58:40 -0700
+Subject: [PATCH] GB Video: Don't rendering negative batches
+
+---
+ src/gb/renderers/software.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/gb/renderers/software.c b/src/gb/renderers/software.c
+index 542aec901..f023d99b4 100644
+--- a/src/gb/renderers/software.c
++++ b/src/gb/renderers/software.c
+@@ -565,6 +565,9 @@ static void GBVideoSoftwareRendererDrawRange(struct GBVideoRenderer* renderer, i
+ 	struct GBVideoSoftwareRenderer* softwareRenderer = (struct GBVideoSoftwareRenderer*) renderer;
+ 	softwareRenderer->lastY = y;
+ 	softwareRenderer->lastX = endX;
++	if (startX >= endX) {
++		return;
++	}
+ 	uint8_t* maps = &softwareRenderer->d.vram[GB_BASE_MAP];
+ 	if (GBRegisterLCDCIsTileMap(softwareRenderer->lcdc)) {
+ 		maps += GB_SIZE_MAP;
+-- 
+2.20.1
+

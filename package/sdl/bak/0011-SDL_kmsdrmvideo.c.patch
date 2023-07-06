@@ -1,0 +1,986 @@
+--- a/src/video/kmsdrm/SDL_kmsdrmvideo.c	2022-01-14 18:06:54.000000000 +0300
++++ b/src/video/kmsdrm/SDL_kmsdrmvideo.c	2023-06-04 20:19:19.840171180 +0300
+@@ -38,288 +38,89 @@
+ 
+ static void KMSDRM_DeleteDevice(SDL_VideoDevice *device)
+ {
++//printf("KMSDRM_DeleteDevice\n");
+ 	SDL_free(device->hidden);
+ 	SDL_free(device);
+ }
+ 
+-static int KMSDRM_HasDBufCaps(int fd)
+-{
+-	Uint64 has_dumb;
+-	return (drmGetCap(fd, DRM_CAP_DUMB_BUFFER, &has_dumb) >= 0 && has_dumb);
+-}
+-
+-static int KMSDRM_OpenDevice()
+-{
+-	int fd;
+-
+-	// First, see if we have a default node set.
+-	const char *env_node = getenv("SDL_VIDEO_KMSDRM_NODE");
+-	if (env_node) {
+-		fd = open(env_node, O_RDWR | O_CLOEXEC);
+-		// Is our DRM device capable of dumb buffers?
+-		if ( fd >= 0 && !KMSDRM_HasDBufCaps(fd) ) {
+-			fprintf(stderr, "Default node '%s' has no dumb buffer capability.\n", env_node);
+-			close(fd);
+-			return(-1);
+-		}
+-	} else {
+-		char node_path[] = "/dev/dri/cardxxx";
+-		for (int i = 0; i < 128; i++) {
+-			snprintf(node_path, sizeof(node_path), "/dev/dri/card%d", i);
+-			fd = open(node_path, O_RDWR | O_CLOEXEC);
+-
+-			// If device node does not exist, stop searching
+-			if (fd == -ENOENT) {
+-				break;
+-			}
+-
+-			// For any other error code, let's try the next
+-			if ( fd < 0 ) {
+-				continue;
+-			}
+-
+-			// Is our DRM device capable of dumb buffers? If not, skip it
+-			if ( !KMSDRM_HasDBufCaps(fd) ) {
+-				close(fd);
+-				fd = -1;
+-			} else {
+-				break;
+-			}
+-		}
+-	}
+-
+-	return(fd);
+-}
+-
+ static int KMSDRM_Available(void)
+ {
++//printf("KMSDRM_Available\n");
+ 	const char *envr = SDL_getenv("SDL_VIDEODRIVER");
+ 	if ((envr) && (SDL_strcmp(envr, KMSDRM_DRIVER_NAME) == 0)) {
+ 		return(1);
+ 	}
+ 
+-	int fd = KMSDRM_OpenDevice();
+-	if ( fd < 0 ) {
+-		return(0);
++
++	DhHwInfo *dhHwInfo = DrmHelperInit(0);
++
++	if (!dhHwInfo)
++	{
++		printf("Error DrmHelperInit\n");
++		return 0;
+ 	}
+ 
+-	close(fd);
++	DrmHelperFree();
+ 	return(1);
+ }
+ 
+ int KMSDRM_VideoInit(_THIS, SDL_PixelFormat *vformat)
+ {
+-	if ( (drm_fd = KMSDRM_OpenDevice()) < 0 ) {
+-		SDL_SetError("Could not find any (capable) DRM device.\n");
+-		goto vidinit_fail;
+-	}
+-
+-	if (drmSetClientCap(drm_fd, DRM_CLIENT_CAP_ATOMIC, 1)) {
+-		fprintf(stderr, "Failed to set client atomic cap, %s.\n", strerror(errno));
+-		goto vidinit_fail_fd;
+-	}
++//printf("KMSDRM_VideoInit\n");
++	drm_hw_info = DrmHelperInit(0);
+ 
+-	// Enable universal planes (necessary for the atomic api)
+-	if (drmSetClientCap(drm_fd, DRM_CLIENT_CAP_UNIVERSAL_PLANES, 1)) {
+-		fprintf(stderr, "Failed to set universal planes cap, %s.\n", strerror(errno));
+-		goto vidinit_fail_fd;
+-	}
+-
+-	// Get available resources.
+-	drmModeRes *res = drmModeGetResources(drm_fd);
+-	if (!res) {
+-		SDL_SetError("Unable to get resources for device.\n");
+-		goto vidinit_fail_fd;
+-	}
+-
+-	drmModePlaneRes *pres = drmModeGetPlaneResources(drm_fd);
+-	if (!res) {
+-		SDL_SetError("Unable to get resources for device.\n");
+-		goto vidinit_fail_res;
++	if (!drm_hw_info)
++	{
++		SDL_SetError("Could not find any (capable) DRM device.\n");
++		return -1;
+ 	}
+ 
+-	#define acquire_props_for(_res, type, TYPE) \
+-		for (int i = 0; i < _res->count_##type##s; i++) { \
+-			kmsdrm_dbg_printf("PROPS FOR %s %d.\n", #TYPE, _res->type##s[i]); \
+-			acquire_properties(this, _res->type##s[i], DRM_MODE_OBJECT_##TYPE); \
+-		}
+ 
+-	// Acquire props for all objects
+-	acquire_props_for(pres, plane, PLANE);
+-	acquire_props_for(res, crtc, CRTC);
+-	acquire_props_for(res, connector, CONNECTOR);
+-	acquire_props_for(res, encoder, ENCODER);
+ 
+ 	// Initialize vid_mode listing
+ 	drm_vid_mode_count = 0;
+ 	drm_vid_modes = SDL_realloc(drm_vid_modes, sizeof(*drm_vid_modes) * (drm_vid_mode_count+1));
+ 	drm_vid_modes[0] = NULL;
++	
++	drm_crtc_w = drm_hw_info->width;
++	drm_crtc_h = drm_hw_info->height;
++	KMSDRM_RegisterVidMode(this, drm_hw_info->width, drm_hw_info->height);
+ 
+-	for (int plane_idx = 0; plane_idx < pres->count_planes; plane_idx++) {
+-		drmModePlane *plane = drmModeGetPlane(drm_fd, pres->planes[plane_idx]);
+-		if ( !plane ) {
+-			continue;
+-		}
+-
+-		for (int crtc_idx = 0; crtc_idx < res->count_crtcs; crtc_idx++)
+-		for (int encoder_idx = 0; encoder_idx < res->count_encoders; encoder_idx++)
+-		for (int connector_idx = 0; connector_idx < res->count_connectors; connector_idx++) {
+-			drmModeCrtc *crtc = drmModeGetCrtc(drm_fd, res->crtcs[crtc_idx]);
+-			drmModeEncoder *enc = drmModeGetEncoder(drm_fd, res->encoders[encoder_idx]);
+-			drmModeConnector *conn = drmModeGetConnector(drm_fd, res->connectors[connector_idx]);
+-			if ( crtc && enc && conn &&
+-			     (plane->possible_crtcs & (1 << crtc_idx)) &&
+-			     (enc->possible_crtcs & (1 << crtc_idx)) &&
+-			     conn->encoder_id == enc->encoder_id &&
+-			     conn->connection == DRM_MODE_CONNECTED &&
+-			     conn->count_modes > 0 ) {
+-				// This is a complete, suitable pathway. save it.
+-				save_drm_pipe(this, plane->plane_id, crtc->crtc_id,
+-					      enc->encoder_id, conn);
+-			}
+-
+-			if (crtc) drmModeFreeCrtc(crtc);
+-			if (enc)  drmModeFreeEncoder(enc);
+-			if (conn) drmModeFreeConnector(conn);
+-		}
+-
+-		drmModeFreePlane(plane);
+-	}
+-
+-	// Setup attempt finished, free resources
+-	drmModeFreeResources(res);
+-	drmModeFreePlaneResources(pres);
+ 
+ 	// Setup video information
+ 	this->info.hw_available = 1;
+ 	if (drm_vid_modes[0]) {
+ 		this->info.current_w = drm_vid_modes[0]->w;
+ 		this->info.current_h = drm_vid_modes[0]->h;
+-		vformat->BitsPerPixel = KMSDRM_DEFAULT_COLOR_DEPTH;
+-	}
+-
+-	// Check if we did not succeeded
+-	if (drm_first_pipe == NULL) {
+-		SDL_SetError("Unable to initialize device, no suitable pipes.\n");
+-		goto vidinit_fail_fd; /* resources already cleaned up */
+-	}
+-
+-	// These values shouldn't be zero-initialized, so, set them appropriately
+-	drm_mode_blob_id = -1;
+-	for (int i = 0; i < sizeof(drm_buffers) / sizeof(drm_buffers[0]); i++) {
+-		drm_buffers[i].map = (void*)-1;
+-		drm_buffers[i].req_create.handle = -1;
+-	}
+-
+-	if (drmModeCreatePropertyBlob(drm_fd, drm_palette,
+-				      sizeof(drm_palette), &drm_palette_blob_id)) {
+-		SDL_SetError("Unable to create gamma LUT blob.\n");
+-		goto vidinit_fail_fd;
++		vformat->BitsPerPixel = drm_hw_info->bpp;
+ 	}
+ 
++	drm_plane_info = NULL;
+ 	KMSDRM_TripleBufferInit(this);
+ 
+-	KMSDRM_InitInput(this);
++	if(KMSDRM_InitInput(this)) {
++		DrmHelperFree();
++		return -1;
++	}
+ 
+ 	return 0;
+-vidinit_fail_res:
+-	while (free_drm_prop_storage(this));
+-	while (free_drm_pipe(this));
+-	drmModeFreeResources(res);
+-vidinit_fail_fd:
+-	close(drm_fd);
+-	drm_fd = -1;
+-vidinit_fail:
+-	return -1;
+ }
+ 
+ SDL_Rect **KMSDRM_ListModes(_THIS, SDL_PixelFormat *format, Uint32 flags)
+ {
++//printf("KMSDRM_ListModes\n");
+ 	return drm_vid_modes;
+ }
+ 
+-static int KMSDRM_CreateFramebuffer(_THIS, int idx, Uint32 width, Uint32 height, const drm_color_def *color_def)
+-{
+-// Request a dumb buffer from the DRM device
+-	struct drm_mode_create_dumb *req_create = &drm_buffers[idx].req_create;
+-	struct drm_mode_map_dumb *req_map = &drm_buffers[idx].req_map;
+-	struct drm_mode_destroy_dumb *req_destroy_dumb = &drm_buffers[idx].req_destroy_dumb;
+-
+-	/**
+-	 * Reserve a handle for framebuffer creation.
+-	 * A multi planar dumb buffers' height is a multiple of the requested height,
+-	 * and varies depending on the color format used.
+-	 **/
+-	req_create->width = width;
+-	req_create->height = height * color_def->h_factor;
+-	req_create->bpp = color_def->bpp;
+-	if ( drmIoctl(drm_fd, DRM_IOCTL_MODE_CREATE_DUMB, req_create ) < 0) {
+-			SDL_SetError("Dumb framebuffer request failed, %s.\n", strerror(errno));
+-			return 0;
+-	}
+-
+-	// Remember it in case we need to destroy it in the future
+-	req_destroy_dumb->handle = req_create->handle;
+-	kmsdrm_dbg_printf("Creating framebuffer %dx%dx%d (%c%c%c%c)\n", 
+-			 width, height, color_def->bpp,
+-			 color_def->four_cc        & 0xFF,
+-			(color_def->four_cc >>  8) & 0xFF,
+-			(color_def->four_cc >> 16) & 0xFF,
+-			 color_def->four_cc >> 24);
+-
+-	// Calculate the necessary information to create the framebuffer
+-	Uint32 handles[4] = {};
+-	Uint32 pitches[4] = {};
+-	Uint32 offsets[4] = {};
+-	get_framebuffer_args(color_def, req_create->handle, req_create->pitch, height,
+-		&handles[0], &pitches[0], &offsets[0]);
+-
+-	// Create the framebuffer object
+-	if ( drmModeAddFB2(drm_fd, width, height, color_def->four_cc, &handles[0], 
+-			&pitches[0], &offsets[0], &drm_buffers[idx].buf_id, 0) ) {
+-		SDL_SetError("Unable to create framebuffer, %s.\n", strerror(errno));
+-		goto createfb_fail_ddumb;
+-	}
+-
+-	// Request information on how to map our framebuffer
+-	req_map->handle = req_create->handle;
+-	if ( drmIoctl(drm_fd, DRM_IOCTL_MODE_MAP_DUMB, req_map) < 0 ) {
+-		SDL_SetError("Map data request failed, %s.\n", strerror(errno));
+-		goto createfb_fail_rmfb;
+-	}
+-
+-	// Map the framebuffer
+-	drm_buffers[idx].map = mmap(0, req_create->size, PROT_READ | PROT_WRITE, MAP_SHARED, drm_fd, req_map->offset);
+-	kmsdrm_dbg_printf("req_map->offset: 0x%016llX, map: %p\n", req_map->offset, drm_buffers[idx].map);
+-	if ( drm_map == MAP_FAILED ) {
+-		SDL_SetError("Failed to map framebuffer, %s.\n", strerror(errno));
+-		goto createfb_fail_rmfb;
+-	}
+-
+-	return 1;
+-
+-createfb_fail_rmfb:
+-	drmModeRmFB(drm_fd, drm_buffers[idx].buf_id);
+-createfb_fail_ddumb:
+-	drmIoctl(drm_fd, DRM_IOCTL_MODE_DESTROY_DUMB, req_destroy_dumb);
+-	drm_buffers[idx].req_create.handle = -1;
+-	drm_buffers[idx].req_create.pitch = 0;
+-	return 0;
+-}
+-
+-static void KMSDRM_ClearFramebuffers(_THIS)
++static int KMSDRM_VideoModeOK(_THIS, int width, int height, int bpp, Uint32 flags)
+ {
+-	for (int i = 0; i < sizeof(drm_buffers) / sizeof(drm_buffers[0]); i++) {
+-		if (drm_buffers[i].req_create.handle != -1) {
+-			drmUnmap(drm_buffers[i].map, drm_buffers[i].req_create.size);
+-			drmModeRmFB(drm_fd, drm_buffers[i].buf_id);
+-			drmIoctl(drm_fd, DRM_IOCTL_MODE_DESTROY_DUMB, &drm_buffers[i].req_destroy_dumb);
+-			drm_buffers[i].map = (void*)-1;
+-			drm_buffers[i].req_create.handle = -1;
+-		}
+-	}
++//printf("KMSDRM_VideoModeOK  width:%d height:%d\n",width, height);
++	if(width > drm_hw_info->width ||  height > drm_hw_info->height)
++		return 0;
++        return (bpp); /* TODO: check that the resolution is really OK */
+ }
+ 
++/*
+ static void KMSDRM_ClearShadowbuffer(_THIS)
+ {
+ 	if ( drm_shadow_buffer ) {
+@@ -329,127 +130,31 @@
+ 		drm_yuv_palette = NULL;
+ 	}
+ }
+-
+-static int KMSDRM_VideoModeOK(_THIS, int width, int height, int bpp, Uint32 flags)
+-{
+-	return (bpp); /* TODO: check that the resolution is really OK */
+-}
+-
+-static int KMSDRM_SetCrtcParams(_THIS, drmModeAtomicReqPtr req, Uint32 plane_id,
+-				Uint32 crtc_id, int width, int height,
+-				int mode_width, int mode_height, int bpp)
+-{
+-	unsigned int crtc_w, crtc_h, scaling_mode = this->hidden->scaling_mode, sharpness,
+-		     ratio_w, ratio_h, ratio;
+-	const char *env_mode = getenv("SDL_VIDEO_KMSDRM_SCALING_MODE");
+-	const char *env_sharpness = getenv("SDL_VIDEO_KMSDRM_SCALING_SHARPNESS");
+-
+-	if (env_mode)
+-		scaling_mode = atoi(env_mode);
+-
+-	switch (scaling_mode) {
+-	case DRM_SCALING_MODE_ASPECT_RATIO:
+-		if (width * mode_height * drm_active_pipe->factor_w >
+-		    height * mode_width * drm_active_pipe->factor_h) {
+-			crtc_w = mode_width;
+-			crtc_h = (drm_active_pipe->factor_h * crtc_w * height /
+-				(width * drm_active_pipe->factor_w));
+-			if (crtc_h & 1)
+-				crtc_h++;
+-		} else {
+-			crtc_h = mode_height;
+-			crtc_w = (drm_active_pipe->factor_w * crtc_h * width /
+-				(height * drm_active_pipe->factor_h));
+-			if (crtc_w & 1)
+-				crtc_w++;
+-		}
+-		break;
+-	case DRM_SCALING_MODE_INTEGER_SCALED:
+-		if (width <= mode_width / drm_active_pipe->factor_w &&
+-		    height <= mode_height / drm_active_pipe->factor_h) {
+-			ratio_w = ((mode_width / drm_active_pipe->factor_w) / width);
+-			ratio_h = ((mode_height / drm_active_pipe->factor_h) / height);
+-			ratio = ratio_w < ratio_h ? ratio_w : ratio_h;
+-
+-			crtc_w = width * drm_active_pipe->factor_w * ratio;
+-			crtc_h = height * drm_active_pipe->factor_h * ratio;
+-			break;
+-		}
+-		/* fall-through */
+-	case DRM_SCALING_MODE_FULLSCREEN:
+-		crtc_w = mode_width;
+-		crtc_h = mode_height;
+-		break;
+-	default:
+-		fprintf(stderr, "Invalid mode %d\n", scaling_mode);
+-		return 1;
+-	}
+-
+-	if (env_sharpness) {
+-		sharpness = atoi(env_sharpness);
+-
+-		if (!add_property(this, req, plane_id, "sharpness", 1, sharpness))
+-			return 1;
+-	}
+-
+-	if (!add_property(this, req, plane_id, "CRTC_X", 0, (mode_width - crtc_w) / 2))
+-		return 1;
+-
+-	if (!add_property(this, req, plane_id, "CRTC_Y", 0, (mode_height - crtc_h) / 2))
+-		return 1;
+-
+-	if (!add_property(this, req, plane_id, "CRTC_W", 0, crtc_w))
+-		return 1;
+-
+-	if (!add_property(this, req, plane_id, "CRTC_H", 0, crtc_h))
+-		return 1;
+-
+-	if (bpp == 8 &&
+-	    !add_property(this, req, crtc_id, "GAMMA_LUT", 0, drm_palette_blob_id))
+-		return 1;
+-
+-	return 0;
+-}
+-
+-static SDL_Surface *KMSDRM_SetVideoMode2(_THIS, SDL_Surface *current,
+-					 int width, int height, int bpp,
+-					 Uint32 flags, int recursive)
++*/
++static SDL_Surface *KMSDRM_SetVideoMode(_THIS, SDL_Surface *current,
++				int width, int height, int bpp, Uint32 flags)
+ {
+-	SDL_Surface *new_surface;
+-	drmModeModeInfo *closest_mode;
+-
++	//printf("KMSDRM_SetVideoMode  width:%d height:%d\n",width, height);
+ 	// Lock the event thread, in multi-threading environments
+ 	SDL_Lock_EventThread();
+ 
++	if (FB_EnterGraphicsMode(this) < 0) {
++		SDL_SetError("Unable FB_EnterGraphicsMode");
++		return NULL;
++	}
++
+ 	// If we have set a video mode previously, now we need to clean up.
+-	if ( drm_active_pipe ) {
++	if ( drm_plane_info ) {
+ 		if ( drm_triplebuf_thread ) {
+ 			KMSDRM_TripleBufferStop(this);
+ 		}
+ 
+-		drm_active_pipe = NULL;
+-		KMSDRM_ClearShadowbuffer(this);
+-		KMSDRM_ClearFramebuffers(this);
+-		drmModeDestroyPropertyBlob(drm_fd, drm_mode_blob_id);
+-		drmModeAtomicFree(this->hidden->drm_req);
+-		this->hidden->drm_req = NULL;
++		DrmHelperFreeFb(drm_plane_info);
++		drm_plane_info = NULL;
+ 	}
+ 
+-	// Select the desired refresh rate.
+-	int refresh_rate = KMSDRM_DEFAULT_REFRESHRATE;
+-	char *r_end, *refresh_env = getenv("SDL_VIDEO_REFRESHRATE");
+-	if ( refresh_env ) {
+-		long rr = strtol(refresh_env, &r_end, 10);
+-		if (*r_end == '\0') {
+-			refresh_rate = rr;
+-		}
+-	}
+-
+-	// Set all buffer indexes
+-	drm_back_buffer = 1;
+-	drm_front_buffer = 0;
+-	drm_queued_buffer = 2;	
+ 
++#if 0
+ 	if (bpp == 8 && (flags & SDL_YUV444)) {
+ 		/**
+ 		 * Emulate paletted video mode with a YUV surface. For this,
+@@ -459,6 +164,7 @@
+ 		drm_shadow_buffer = calloc(width * height, (bpp + 7) / 8);
+ 		drm_yuv_palette = calloc(1 << bpp, sizeof(*drm_yuv_palette));
+ 	}
++#endif
+ 
+ 	// Get rounded bpp number for drm_mode_create_dumb.
+ 	const drm_color_def *color_def = get_drm_color_def(bpp, flags);
+@@ -473,131 +179,54 @@
+ 
+ 	// Initialize how many framebuffers were requested
+ 	kmsdrm_dbg_printf("Creating %d framebuffers!\n", n_buf);
+-	for (int i = 0; i < n_buf; i++) {
+-		if ( !KMSDRM_CreateFramebuffer(this, i, width, height, color_def)) {
+-			goto setvidmode_fail_fbs;
+-		}
++	//DrmHelperAllocFb(DhPlaneType type, uint32_t fourcc_format, uint16_t width, uint16_t height,uint16_t x, uint16_t y, uint8_t count_bufs, uint8_t fullscreen)
++	drm_plane_info = DrmHelperAllocFb(dh_plane_type_overlay, color_def->four_cc, width, height, 0, 0, n_buf, 1);
++	if (!drm_plane_info) {
++		goto setvidmode_fail_fbs;
++	}
++	
++	//for overlay
++	DrmHelperSetZpos(drm_plane_info, 1);
++	if(n_buf == 1){
++		DrmHelperFlipConfirm(drm_plane_info);
+ 	}
+ 
+-	#define attempt_add_prop(t, req, id, name, opt, val) \
+-		if (!add_property(t, req, id, name, opt, val)) \
+-			goto setvidmode_fail_req;
+-
+-	#define attempt_add_prop2(t, req, id, name, opt, val) \
+-		if (!add_property(t, req, id, name, opt, val)) \
+-			goto setvidmode_fail_req2;
+-
+-	drmModeAtomicReqPtr req;
+-
+-	for (drm_pipe *pipe = drm_first_pipe; pipe; pipe = pipe->next) {
+-		closest_mode = find_pipe_closest_refresh(pipe, refresh_rate);
+-
+-		// Use the connector's preferred mode first.
+-		drmModeCreatePropertyBlob(drm_fd, closest_mode, sizeof(*closest_mode), &drm_mode_blob_id);
+-
+-		// Start a new atomic modeset request
+-		req = drmModeAtomicAlloc();
+-
+-		kmsdrm_dbg_printf("Attempting plane: %d crtc: %d mode: #%02d ", pipe->plane, pipe->crtc, drm_mode_blob_id);
+-		dump_mode(closest_mode);
+-
+-		// Disable the other primary planes of this CRTC
+-		for (drm_pipe *other = drm_first_pipe; other; other = other->next) {
+-			if (other != pipe && other->crtc == pipe->crtc) {
+-				attempt_add_prop(this, req, other->plane, "FB_ID", 0, 0);
+-				attempt_add_prop(this, req, other->plane, "CRTC_ID", 0, 0);
+-			}
+-		}
+-
+-		// Setup crtc->connector pipe
+-		attempt_add_prop(this, req, pipe->connector, "CRTC_ID", 0, pipe->crtc);
+-		attempt_add_prop(this, req, pipe->crtc, "MODE_ID", 0, drm_mode_blob_id);
+-		attempt_add_prop(this, req, pipe->crtc, "ACTIVE", 0, 1);
+-
+-		this->hidden->drm_req = req;
+-		req = drmModeAtomicDuplicate(req);
+-
+-		// Setup plane->crtc pipe
+-		attempt_add_prop2(this, req, pipe->plane, "FB_ID", 0, drm_buffers[drm_front_buffer].buf_id);
+-		attempt_add_prop2(this, req, pipe->plane, "CRTC_ID", 0, pipe->crtc);
+-
+-		// Setup plane details
+-		attempt_add_prop2(this, req, pipe->plane, "SRC_X", 0, 0);
+-		attempt_add_prop2(this, req, pipe->plane, "SRC_Y", 0, 0);
+-		attempt_add_prop2(this, req, pipe->plane, "SRC_W", 0, width << 16);
+-		attempt_add_prop2(this, req, pipe->plane, "SRC_H", 0, height << 16);
+-
+-		drm_active_pipe = pipe;
+-
+-		if (KMSDRM_SetCrtcParams(this, req, pipe->plane, pipe->crtc, width, height,
+-					 closest_mode->hdisplay, closest_mode->vdisplay, bpp)) {
+-			fprintf(stderr, "Unable to set CRTC params: %s\n", strerror(errno));
+-			goto setvidmode_fail_req2;
+-		}
+-
+-		int rc = drmModeAtomicCommit(drm_fd, req,
+-					     DRM_MODE_ATOMIC_ALLOW_MODESET, NULL);
+-		drmModeAtomicFree(req);
+-
+-		// Modeset successful, remember necessary data
+-		if ( !rc ) {
+-			this->hidden->w = width;
+-			this->hidden->h = height;
+-			this->hidden->crtc_w = closest_mode->hdisplay;
+-			this->hidden->crtc_h = closest_mode->vdisplay;
+-			this->hidden->bpp = bpp;
+-			break;
+-		} else {
+-			kmsdrm_dbg_printf("SetVideoMode failed: %s, retrying.\n", strerror(errno));
+-			drmModeAtomicFree(this->hidden->drm_req);
+-			this->hidden->drm_req = NULL;
+-			drm_active_pipe = NULL;
+-		}
+ 
+-		// Modeset failed, clean up request and related objects
+-		drmModeDestroyPropertyBlob(drm_fd, drm_mode_blob_id);
+-		drm_mode_blob_id = -1;
+-	}
++        this->hidden->w = width;
++        this->hidden->h = height;
++        this->hidden->bpp = bpp;
+ 
+-	// If we've got no active pipe, then modeset failed. Bail out.
+-	if ( !drm_active_pipe ) {
+-		SDL_SetError("Unable to set video mode.\n");
+-		goto setvidmode_fail_fbs;
+-	}
+ 
+ 	// Let SDL know about the created framebuffer
+ 	if ( ! SDL_ReallocFormat(current, bpp, color_def->r_mask, color_def->g_mask,
+ 	        color_def->b_mask, color_def->a_mask) ) {
+ 		SDL_SetError("Unable to recreate surface format structure!\n");
+-		goto setvidmode_fail_fbs;
++		goto setvidmode_fail_req;
+ 	}
+ 
+-	if ( !drm_shadow_buffer ) {
+-		if ( flags & (SDL_DOUBLEBUF | SDL_TRIPLEBUF) ) {
+-			current->pixels = drm_buffers[drm_back_buffer].map;
+-		} else {
+-			current->pixels = drm_buffers[drm_front_buffer].map;
+-		}
+-	} else {
+-		current->pixels = drm_shadow_buffer;
++	//if ( drm_shadow_buffer ) {
++	//	current->pixels = drm_shadow_buffer;
++	//} else 
++	{
++		//if ( (flags & SDL_TRIPLEBUF) == SDL_TRIPLEBUF ) {
++		current->pixels = DrmHelperWorkBuf(drm_plane_info,DrmHelperWorkGetBufId(drm_plane_info)).map_planes[0];
+ 	}
+-
++	
+ 	current->w = width;
+ 	current->h = height;
+-	current->pitch = drm_buffers[0].req_create.pitch;
++	current->pitch = DrmHelperWorkBuf(drm_plane_info, 0).fbi.pitches[0];
+ 
+-	this->hidden->has_damage_clips = find_property(this, drm_active_pipe->plane,
+-						       "FB_DAMAGE_CLIPS");
++	//this->hidden->has_damage_clips = find_property(this, drm_active_pipe->plane,"FB_DAMAGE_CLIPS");
+ 
+ 	// Let SDL know what type of surface this is. In case the user asks for a
+ 	// SDL_SWSURFACE video mode, SDL will silently create a shadow buffer
+ 	// as an intermediary.
+-	current->flags = SDL_HWSURFACE  |
++	current->flags = SDL_HWSURFACE  | SDL_FULLSCREEN | SDL_NOFRAME | SDL_PREALLOC |
+ 		(flags & SDL_TRIPLEBUF); /* SDL_TRIPLEBUF implies SDL_DOUBLEBUF */
+ 
+ 	/* We do always want the hardware palette if 8bpp is selected */
+-	if (bpp == 8)
+-		current->flags |= SDL_HWPALETTE;
++	//if (bpp == 8)
++	//	current->flags |= SDL_HWPALETTE;
+ 
+ 	if ( (flags & SDL_TRIPLEBUF) == SDL_TRIPLEBUF ) {
+ 		SDL_LockMutex(drm_triplebuf_mutex);
+@@ -608,80 +237,43 @@
+ 		SDL_CondWait(drm_triplebuf_cond, drm_triplebuf_mutex);
+ 		SDL_UnlockMutex(drm_triplebuf_mutex);
+ 	}
+-
++	
+ 	// Unlock the event thread, in multi-threading environments
+ 	SDL_Unlock_EventThread();
+ 	return current;
+ 
+-setvidmode_fail_req2:
+-	drmModeAtomicFree(this->hidden->drm_req);
+-	this->hidden->drm_req = NULL;
+ setvidmode_fail_req:
+-	drmModeAtomicFree(req);
+-	drmModeDestroyPropertyBlob(drm_fd, drm_mode_blob_id);
+-	drm_mode_blob_id = -1;
++	DrmHelperFreeFb(drm_plane_info);
++	drm_plane_info = NULL;
+ setvidmode_fail_fbs:
+-	KMSDRM_ClearFramebuffers(this);
+-setvidmode_fail:
+-	KMSDRM_ClearShadowbuffer(this);
+-	SDL_Unlock_EventThread();
+-
+-	if (!(flags & SDL_YUV444) && bpp == 8) {
+-		/* Try again, with RGB 8bpp -> YUV444 emulation */
+-		new_surface = KMSDRM_SetVideoMode2(this, current, width, height,
+-						   8, flags | SDL_YUV444, 1);
+-		if (new_surface)
+-			return new_surface;
+-	} else if ((flags & (SDL_TRIPLEBUF | SDL_HWSURFACE)) != 0 || bpp != 32) {
+-		Uint32 new_flags = flags & ~(SDL_TRIPLEBUF | SDL_HWSURFACE);
+-
+-		/* Try again, with a standard bpp and SWSURFACE */
+-		new_surface = KMSDRM_SetVideoMode2(this, current, width, height,
+-						   32, new_flags, 1);
+-		if (new_surface)
+-			return new_surface;
+-	} else if (!recursive) {
+-		/* Try again, but request the closest resolution possible to the requested one */
+-		closest_mode = find_closest_res(this, width, height);
+-		if (closest_mode &&
+-		    (closest_mode->hdisplay != width || closest_mode->vdisplay != height)) {
+-			new_surface = KMSDRM_SetVideoMode2(this, current,
+-							   closest_mode->hdisplay,
+-							   closest_mode->vdisplay,
+-							   bpp, flags, 1);
+-			if (new_surface)
+-				return new_surface;
+-		}
+-	}
+ 
++setvidmode_fail:
+ 	/* Else we can't do much */
+ 	return NULL;
+ }
+ 
+-SDL_Surface *KMSDRM_SetVideoMode(_THIS, SDL_Surface *current,
+-				int width, int height, int bpp, Uint32 flags)
+-{
+-	return KMSDRM_SetVideoMode2(this, current, width, height, bpp, flags, 0);
+-}
+-
+ /* We don't actually allow hardware surfaces other than the main one */
+ static int KMSDRM_AllocHWSurface(_THIS, SDL_Surface *surface)
+ {
++//printf("KMSDRM_AllocHWSurface\n");
+ 	return(-1);
+ }
+ static void KMSDRM_FreeHWSurface(_THIS, SDL_Surface *surface)
+ {
++//printf("KMSDRM_FreeHWSurface\n");
+ 	return;
+ }
+ 
+ /* We need to wait for vertical retrace on page flipped displays */
+ static int KMSDRM_LockHWSurface(_THIS, SDL_Surface *surface)
+ {
++//printf("KMSDRM_LockHWSurface\n");
+ 	return(0);
+ }
+ 
+ static void KMSDRM_UnlockHWSurface(_THIS, SDL_Surface *surface)
+ {
++//printf("KMSDRM_UnlockHWSurface\n");
+ 	return;
+ }
+ 
+@@ -693,36 +285,15 @@
+ 	SDL_CondSignal(drm_triplebuf_cond);
+ 
+ 	for (;;) {
+-		int page;
+ 
+ 		SDL_CondWait(drm_triplebuf_cond, drm_triplebuf_mutex);
+ 		if (drm_triplebuf_thread_stop)
+ 			break;
+ 
+-		/* Flip the most recent back buffer with the front buffer */
+-		page = drm_queued_buffer;
+-		drm_queued_buffer = drm_front_buffer;
+-		drm_front_buffer = page;
+-
+-		drmModeAtomicReqPtr req = drmModeAtomicDuplicate(this->hidden->drm_req);
+-
+-		if (KMSDRM_SetCrtcParams(this, req, drm_active_pipe->plane,
+-					 drm_active_pipe->crtc,
+-					 this->hidden->w, this->hidden->h,
+-					 this->hidden->crtc_w, this->hidden->crtc_h,
+-					 this->hidden->bpp))
+-			fprintf(stderr, "Unable to set CRTC params: %s\n", strerror(errno));
+-
+-		/* flip display */
+-		if (!add_property(this, req, drm_active_pipe->plane,
+-				  "FB_ID", 0, drm_buffers[drm_queued_buffer].buf_id))
+-			fprintf(stderr, "Unable to set FB_ID property: %s\n", strerror(errno));
+-
+-		int rc = drmModeAtomicCommit(drm_fd, req, DRM_MODE_ATOMIC_ALLOW_MODESET, NULL);
++		//int DrmHelperFlip(DhPlaneInfo *plane_info, uint8_t sync);
++		int rc = DrmHelperFlip(drm_plane_info);
+ 		if (rc)
+ 			fprintf(stderr, "Unable to flip buffers: %s\n", strerror(errno));
+-
+-		drmModeAtomicFree(req);
+ 	}
+ 
+ 	SDL_UnlockMutex(drm_triplebuf_mutex);
+@@ -754,7 +325,7 @@
+ 	SDL_DestroyMutex(drm_triplebuf_mutex);
+ 	SDL_DestroyCond(drm_triplebuf_cond);
+ }
+-
++/*
+ static void KMSDRM_render_yuv(const Uint8 *src, Uint32 *dst_y,
+ 			      const Uint32 *palette, unsigned int nb_pixels)
+ {
+@@ -787,59 +358,35 @@
+ 	}
+ }
+ 
+-static void KMSDRM_BlitSWBuffer(_THIS, drm_buffer *buf)
++static void KMSDRM_BlitSWBuffer(_THIS, Uint32 *map)
+ {
+-	KMSDRM_render_yuv(drm_shadow_buffer, buf->map, drm_yuv_palette,
++	KMSDRM_render_yuv(drm_shadow_buffer, map, drm_yuv_palette,
+ 			  this->hidden->w * this->hidden->h);
+ }
+-
++*/
+ static int KMSDRM_FlipHWSurface(_THIS, SDL_Surface *surface)
+ {
+-	if ( !drm_active_pipe )
++//printf("KMSDRM_FlipHWSurface\n");
++	//printf("flags:%d  drm_plane_info:%p\n", surface->flags, drm_plane_info);
++	if ( !drm_plane_info )
+ 		return -2;
+-
++#if 0
+ 	// Flip the shadow buffer if present.
+ 	if ( drm_shadow_buffer ) {
+-		KMSDRM_BlitSWBuffer(this, &drm_buffers[drm_back_buffer]);
++		KMSDRM_BlitSWBuffer(this, DrmHelperWorkBuf(drm_plane_info).map_planes[0]);//&drm_buffers[drm_back_buffer]);
+ 	}
+-
++#endif
+ 	// Either wait for VSync or for buffer acquire
+-	if ( (surface->flags & SDL_TRIPLEBUF) == SDL_DOUBLEBUF ) {
+-		drmModeAtomicReqPtr req = drmModeAtomicDuplicate(this->hidden->drm_req);
+-
+-		if (KMSDRM_SetCrtcParams(this, req, drm_active_pipe->plane,
+-					 drm_active_pipe->crtc,
+-					 this->hidden->w, this->hidden->h,
+-					 this->hidden->crtc_w, this->hidden->crtc_h,
+-					 this->hidden->bpp))
+-			fprintf(stderr, "Unable to set CRTC params: %s\n", strerror(errno));
+-
+-		if (!add_property(this, req, drm_active_pipe->plane,
+-				  "FB_ID", 0, drm_buffers[drm_back_buffer].buf_id))
+-			fprintf(stderr, "Unable to set FB_ID property: %s\n", strerror(errno));
+-
+-		int rc = drmModeAtomicCommit(drm_fd, req, DRM_MODE_ATOMIC_ALLOW_MODESET, NULL);
+-		if (rc)
+-			fprintf(stderr, "Unable to flip buffers: %s\n", strerror(errno));
+-
+-		drmModeAtomicFree(req);
+-	} else {
+-		SDL_LockMutex(drm_triplebuf_mutex);
+-	}
+-
+-	// Swap between the two available buffers
+-	int prev_buffer = drm_front_buffer;
+-	drm_front_buffer = drm_back_buffer;
+-	drm_back_buffer = prev_buffer;
+-
+-	// Expose the new buffer if necessary
+-	if ( !drm_shadow_buffer ) {
+-		surface->pixels = drm_buffers[drm_back_buffer].map;
+-	}
+-
+ 	if ( (surface->flags & SDL_TRIPLEBUF) == SDL_TRIPLEBUF ) {
++		SDL_LockMutex(drm_triplebuf_mutex);
++		int buf_id = DrmHelperWorkGetBufId(drm_plane_info);
++		if(buf_id >= 0)
++			surface->pixels = DrmHelperWorkBuf(drm_plane_info, buf_id).map_planes[0];
+ 		SDL_CondSignal(drm_triplebuf_cond);
+ 		SDL_UnlockMutex(drm_triplebuf_mutex);
++	} else {
++		DrmHelperFlipConfirm(drm_plane_info);
++		surface->pixels = DrmHelperWorkBuf(drm_plane_info, drm_plane_info->opened_buf).map_planes[0];
+ 	}
+ 
+ 	return 1;
+@@ -847,6 +394,8 @@
+ 
+ static void KMSDRM_UpdateRects(_THIS, int numrects, SDL_Rect *rects)
+ {
++//printf("KMSDRM_UpdateRects\n");
++#if 0
+ 	struct drm_mode_rect *drm_rects;
+ 	drmModeAtomicReqPtr req;
+ 	unsigned int i;
+@@ -870,55 +419,19 @@
+ 		return;
+ 
+ 	/* No FB_DAMAGE_CLIPS property - no need to go further */
+-	if (!this->hidden->has_damage_clips)
++	//if (!this->hidden->has_damage_clips)
+ 		return;
+-
+-	req = drmModeAtomicDuplicate(this->hidden->drm_req);
+-
+-	drm_rects = alloca(numrects * sizeof(*drm_rects));
+-
+-	for (i = 0; i < numrects; i++) {
+-		drm_rects[i].x1 = rects[i].x;
+-		drm_rects[i].y1 = rects[i].y;
+-		drm_rects[i].x2 = rects[i].x + rects[i].w;
+-		drm_rects[i].y2 = rects[i].y + rects[i].h;
+-	}
+-
+-	ret = drmModeCreatePropertyBlob(drm_fd, drm_rects,
+-					sizeof(*drm_rects) * numrects, &blob_id);
+-	if (ret != 0) {
+-		fprintf(stderr, "Unable to create damage clips blob\n");
+-		return;
+-	}
+-
+-	if (KMSDRM_SetCrtcParams(this, req, drm_active_pipe->plane,
+-				 drm_active_pipe->crtc,
+-				 this->hidden->w, this->hidden->h,
+-				 this->hidden->crtc_w, this->hidden->crtc_h,
+-				 this->hidden->bpp))
+-		fprintf(stderr, "Unable to set CRTC params: %s\n", strerror(errno));
+-
+-	if (!add_property(this, req, drm_active_pipe->plane,
+-			  "FB_DAMAGE_CLIPS", 0, blob_id))
+-		fprintf(stderr, "Unable to set FB_DAMAGE_CLIPS property: %s\n", strerror(errno));
+-
+-	if (!add_property(this, req, drm_active_pipe->plane,
+-			  "FB_ID", 0, drm_buffers[drm_front_buffer].buf_id))
+-		fprintf(stderr, "Unable to set FB_ID property: %s\n", strerror(errno));
+-
+-	int rc = drmModeAtomicCommit(drm_fd, req, DRM_MODE_ATOMIC_NONBLOCK, NULL);
+-	if (rc && errno != EBUSY)
+-		fprintf(stderr, "Unable to update rects: %s\n", strerror(errno));
+-
+-	drmModeAtomicFree(req);
++#endif
+ }
+ 
+ #define U1616(val) ((Uint32)(val * (float)(1<<16)))
+ 
+ int KMSDRM_SetColors(_THIS, int firstcolor, int ncolors, SDL_Color *colors)
+ {
++//printf("KMSDRM_SetColors\n");
++#if 0
+ 	unsigned int i;
+-	Uint32 blob_id, old_palette_id;
++	//Uint32 blob_id, old_palette_id;
+ 	if ( drm_yuv_palette ) {
+ 		/**
+ 		 * For devices without support for XRGB modes on the IPU such as
+@@ -947,7 +460,7 @@
+ 				.blue = colors[i].b << 8,
+ 			};
+ 		}
+-
++/* TODO
+ 		if (drmModeCreatePropertyBlob(drm_fd, drm_palette,
+ 					      sizeof(drm_palette), &blob_id)) {
+ 			fprintf(stderr, "Unable to create gamma LUT blob\n");
+@@ -958,8 +471,9 @@
+ 		drm_palette_blob_id = blob_id;
+ 
+ 		drmModeDestroyPropertyBlob(drm_fd, old_palette_id);
++*/
+ 	}
+-
++#endif
+ 	return(1);
+ }
+ 
+@@ -968,32 +482,28 @@
+ */
+ void KMSDRM_VideoQuit(_THIS)
+ {
+-	if (this->screen->pixels != NULL)
++//printf("KMSDRM_VideoQuit\n");
++	if (drm_hw_info)
+ 	{
+ 		KMSDRM_TripleBufferQuit(this);
+-		KMSDRM_ClearShadowbuffer(this);
+-		KMSDRM_ClearFramebuffers(this);
+-		drmModeDestroyPropertyBlob(drm_fd, drm_palette_blob_id);
+-		while (free_drm_prop_storage(this));
+-		while (free_drm_pipe(this));
+-
+-		this->screen->pixels = NULL;
++		//KMSDRM_ClearShadowbuffer(this);
++		DrmHelperFree();
++		drm_hw_info = NULL;
+ 	}
+-
+ 	KMSDRM_ExitInput(this);
+-	close(drm_fd);
+ }
+ 
+ static SDL_VideoDevice *KMSDRM_CreateDevice(int devindex)
+ {
++//printf("SDL_VideoDevice\n");
+ 	SDL_VideoDevice *device;
+ 
+ 	/* Initialize all variables that we clean on shutdown */
+ 	device = (SDL_VideoDevice *)SDL_malloc(sizeof(SDL_VideoDevice));
+ 	if ( device ) {
+-		SDL_memset(device, 0, (sizeof *device));
++		SDL_memset(device, 0, sizeof(SDL_VideoDevice));
+ 		device->hidden = (struct SDL_PrivateVideoData *)
+-				SDL_malloc((sizeof *device->hidden));
++				SDL_malloc(sizeof (struct SDL_PrivateVideoData));
+ 	}
+ 	if ( (device == NULL) || (device->hidden == NULL) ) {
+ 		SDL_OutOfMemory();
+@@ -1002,8 +512,9 @@
+ 		}
+ 		return(0);
+ 	}
+-	SDL_memset(device->hidden, 0, (sizeof *device->hidden));
++	SDL_memset(device->hidden, 0, sizeof (struct SDL_PrivateVideoData));
+ 
++	device->handles_any_size = 1;
+ 	/* Set the function pointers */
+ 	device->VideoInit = KMSDRM_VideoInit;
+ 	device->ListModes = KMSDRM_ListModes;

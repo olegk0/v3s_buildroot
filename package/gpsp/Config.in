@@ -1,0 +1,10 @@
+comment "gpSP is an open-source Game Boy Advance emulator created by Exophase for the PlayStation Portable"
+	depends on BR2_PACKAGE_SDL
+
+menuconfig BR2_PACKAGE_GPSP
+	bool "gpsp"
+	depends on BR2_PACKAGE_SDL
+	depends on BR2_PACKAGE_DRM_HELPER
+	help
+	  gpSP is an open-source Game Boy Advance emulator created by
+	  Exophase for the PlayStation Portable

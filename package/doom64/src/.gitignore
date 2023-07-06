@@ -1,0 +1,18 @@
+# ignore CLion-specific project files
+/.idea/
+/cmake-build-*/
+
+# ignore Visual Studio-specific project files
+/.vs
+
+# extern
+/extern/
+!/extern/CMakeLists.txt
+!/extern/patched-config_win32.h
+
+# build dir
+/build
+
+# conan
+conanbuildinfo.cmake
+conaninfo.txt

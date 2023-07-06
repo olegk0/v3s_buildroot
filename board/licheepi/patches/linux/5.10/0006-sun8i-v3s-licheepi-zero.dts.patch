@@ -1,0 +1,17 @@
+--- a/arch/arm/boot/dts/sun8i-v3s-licheepi-zero.dts	2023-05-31 23:41:29.708526620 +0300
++++ b/arch/arm/boot/dts/sun8i-v3s-licheepi-zero.dts	2023-05-31 23:41:55.216824136 +0300
+@@ -90,6 +90,14 @@
+ 	status = "okay";
+ };
+ 
++&ehci0 {
++    status = "okay";
++};
++
++&ohci0 {
++    status = "okay";
++};
++
+ &usb_otg {
+ 	dr_mode = "otg";
+ 	status = "okay";

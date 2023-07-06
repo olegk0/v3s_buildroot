@@ -1,0 +1,12 @@
+--- a/src/video/kmsdrm/SDL_kmsdrmmouse.h	2022-12-17 13:11:20.000000000 +0300
++++ b/src/video/kmsdrm/SDL_kmsdrmmouse.h	2023-05-25 11:24:17.619879826 +0300
+@@ -24,7 +24,9 @@
+ #ifndef SDL_KMSDRM_mouse_h_
+ #define SDL_KMSDRM_mouse_h_
+ 
++#if SDL_VIDEO_OPENGL_EGL
+ #include <gbm.h>
++#endif
+ 
+ #define MAX_CURSOR_W 512
+ #define MAX_CURSOR_H 512

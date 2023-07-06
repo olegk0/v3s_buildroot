@@ -1,0 +1,12 @@
+--- a/src/video/kmsdrm/SDL_kmsdrmevents_c.h	2022-01-14 18:06:54.000000000 +0300
++++ b/src/video/kmsdrm/SDL_kmsdrmevents_c.h	2023-06-04 18:30:26.777505954 +0300
+@@ -28,7 +28,8 @@
+ */
+ extern void KMSDRM_InitOSKeymap(_THIS);
+ extern void KMSDRM_PumpEvents(_THIS);
+-extern void KMSDRM_InitInput(_THIS);
++extern int KMSDRM_InitInput(_THIS);
+ extern void KMSDRM_ExitInput(_THIS);
++extern int FB_EnterGraphicsMode(_THIS);
+ 
+ /* end of SDL_nullevents_c.h ... */

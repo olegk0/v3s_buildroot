@@ -1,0 +1,14 @@
+Description: Don't install excluded res/licenses/rapidjson.txt
+ The vendored RapidJSON and its license text are excluded via Files-Excluded.
+ Don't try to install the removed license file.
+Author: Ryan Tandy <ryan@nardis.ca>
+--- mgba-0.8.0+dfsg.orig/CMakeLists.txt
++++ mgba-0.8.0+dfsg/CMakeLists.txt
+@@ -1011,7 +1011,6 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR
+ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/licenses/inih.txt DESTINATION ${CMAKE_INSTALL_DOCDIR}/licenses COMPONENT ${BINARY_NAME})
+ if(USE_DISCORD_RPC)
+ 	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/licenses/discord-rpc.txt DESTINATION ${CMAKE_INSTALL_DOCDIR}/licenses COMPONENT ${BINARY_NAME})
+-	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/licenses/rapidjson.txt DESTINATION ${CMAKE_INSTALL_DOCDIR}/licenses COMPONENT ${BINARY_NAME})
+ 	if(WIN32)
+ 		install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/licenses/mingw-std-threads.txt DESTINATION ${CMAKE_INSTALL_DOCDIR}/licenses COMPONENT ${BINARY_NAME})
+ 	endif()

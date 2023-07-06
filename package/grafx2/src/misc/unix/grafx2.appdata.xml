@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id type="desktop">grafx2.desktop</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0 and CECILL-2.0</project_license>
+  <name>GrafX2</name>
+  <summary>A bitmap paint program specialized in 256 color drawing</summary>
+
+  <description>
+    <p>
+      GrafX2 is a bitmap paint program inspired by the Amiga programs ​Deluxe Paint
+      and Brilliance. Specialized in 256-color drawing, it includes a very large
+      number of tools and effects that make it particularly suitable for pixel
+      art, game graphics, and generally any detailed graphics painted with a
+      mouse.
+    </p>
+  </description>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>Zoom functionality</caption>
+      <image>http://grafx2.chez.com/data/medias/screenshots/04-zoom.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Grid mode</caption>
+      <image>http://grafx2.chez.com/data/medias/screenshots/06-grid.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The splash screen</caption>
+      <image>http://grafx2.chez.com/data/medias/screenshots/01-splash.png</image>
+    </screenshot>
+  </screenshots>
+
+  <url type="homepage">http://grafx2.tk</url>
+  <url type="bugtracker">https://pulkomandy.tk/projects/GrafX2</url>
+
+  <provides>
+    <binary>grafx2-sdl2</binary>
+  </provides>
+
+  <content_rating type="oars-1.1" />
+
+  <releases>
+    <release version="2.7" date="2020-01-30" />
+    <release version="2.6" date="2019-01-10" />
+    <release version="2.5" date="2018-05-06" />
+    <release version="2.4" date="2012-12-05" />
+    <release version="2.3" date="2011-04-19" />
+    <release version="2.2" date="2010-03-18" />
+    <release version="2.1" date="2009-06-12" />
+  </releases>  
+</component>

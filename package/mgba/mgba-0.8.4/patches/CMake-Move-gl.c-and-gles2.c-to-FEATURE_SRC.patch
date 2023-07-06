@@ -1,0 +1,56 @@
+From a1c0318290b52302d919c33ce71763fc90353e4f Mon Sep 17 00:00:00 2001
+From: Vicki Pfau <vi@endrift.com>
+Date: Tue, 24 Nov 2020 22:26:45 -0800
+Subject: [PATCH] CMake: Move gl.c and gles2.c to FEATURE_SRC
+
+---
+ CMakeLists.txt | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index a0912d7f8..16c44c14c 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -423,6 +423,7 @@ endif()
+ # Feature dependencies
+ set(FEATURE_DEFINES)
+ set(FEATURE_FLAGS)
++set(FEATURE_SRC)
+ set(FEATURES)
+ set(ENABLES)
+ if(CMAKE_SYSTEM_NAME MATCHES ".*BSD|DragonFly")
+@@ -455,12 +456,12 @@ if(NOT BUILD_GLES2)
+ 	set(OPENGLES2_LIBRARY "" CACHE PATH "" FORCE)
+ endif()
+ if(BUILD_GL)
+-	list(APPEND OS_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/opengl/gl.c)
++	list(APPEND FEATURE_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/opengl/gl.c)
+ 	list(APPEND DEPENDENCY_LIB ${OPENGL_LIBRARY})
+ 	include_directories(${OPENGL_INCLUDE_DIR})
+ endif()
+ if(BUILD_GLES2)
+-	list(APPEND OS_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/opengl/gles2.c)
++	list(APPEND FEATURE_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/opengl/gles2.c)
+ 	list(APPEND DEPENDENCY_LIB ${OPENGLES2_LIBRARY})
+ 	include_directories(${OPENGLES2_INCLUDE_DIR})
+ endif()
+@@ -515,7 +516,6 @@ endif()
+ add_subdirectory(src/debugger)
+ add_subdirectory(src/feature)
+ 
+-set(FEATURE_SRC)
+ set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6")
+ 
+ if(USE_EDITLINE)
+@@ -715,7 +715,7 @@ if (USE_LZMA)
+ endif()
+ 
+ if(USE_EPOXY)
+-	list(APPEND OS_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/opengl/gl.c ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/opengl/gles2.c)
++	list(APPEND FEATURE_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/opengl/gl.c ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/opengl/gles2.c)
+ 	add_definitions(-DBUILD_GL -DBUILD_GLES2)
+ 	list(APPEND FEATURES EPOXY)
+ 	include_directories(AFTER ${EPOXY_INCLUDE_DIRS})
+-- 
+2.20.1
+

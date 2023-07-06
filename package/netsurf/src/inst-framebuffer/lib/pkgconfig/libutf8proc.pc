@@ -1,0 +1,10 @@
+prefix=/home/iam/workspace/SDL/Browser/netsurf-all-3.10.orig/inst-framebuffer
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: libutf8proc
+Description: UTF8 processing
+Version: 2.4.0-1
+Libs: -L${libdir} -lutf8proc
+Cflags: -I${includedir} -DUTF8PROC_EXPORTS

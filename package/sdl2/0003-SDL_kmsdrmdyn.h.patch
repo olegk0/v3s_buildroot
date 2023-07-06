@@ -1,0 +1,12 @@
+--- a/src/video/kmsdrm/SDL_kmsdrmdyn.h	2022-12-17 13:11:20.000000000 +0300
++++ b/src/video/kmsdrm/SDL_kmsdrmdyn.h	2023-05-25 11:22:58.222940584 +0300
+@@ -28,7 +28,9 @@
+ #include <libdrm/drm_fourcc.h>
+ #include <xf86drm.h>
+ #include <xf86drmMode.h>
++#if SDL_VIDEO_OPENGL_EGL
+ #include <gbm.h>
++#endif
+ 
+ #ifdef __cplusplus
+ extern "C" {
